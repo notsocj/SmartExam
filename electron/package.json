@@ -1,0 +1,48 @@
+{
+  "name": "smartexam",
+  "version": "1.0.0",
+  "description": "SmartExaM Desktop Application",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder"
+  },
+  "author": "WALO",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^25.0.0",
+    "electron-builder": "^24.4.0"
+  },
+  "build": {
+    "appId": "com.walo.smartexam",
+    "productName": "SmartExaM",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico"
+    },
+    "extraResources": [
+      {
+        "from": "../",
+        "to": "flask",
+        "filter": [
+          "**/*",
+          "!**/venv",
+          "!**/__pycache__",
+          "!**/electron",
+          "!**/dist",
+          "!**/build"
+        ]
+      },
+      {
+        "from": "../venv",
+        "to": "flask/python",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
+  }
+}

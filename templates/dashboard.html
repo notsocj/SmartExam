@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Dashboard - SmartExaM</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 0;
+        }
+        .stats-card {
+            border: none;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.5rem;
+        }
+        .section-header {
+            border-left: 4px solid #007bff;
+            padding-left: 20px;
+            margin-bottom: 30px;
+        }
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            margin: 0 auto 20px;
+        }
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 40px 0;
+            }
+            .user-avatar {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+        <div class="container-fluid px-3 px-lg-5">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-graduation-cap me-2"></i>SmartExaM
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{{ url_for('dashboard') }}">
+                            <i class="fas fa-home me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    {% if current_user.role == 'student' %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('available_tests') }}">
+                            <i class="fas fa-book-reader me-1"></i>Tests
+                        </a>
+                    </li>
+                    {% endif %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>{{ current_user.name }}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                <i class="fas fa-sign-out-alt me-2"></i>Logout
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container-fluid px-3 px-lg-5">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h1 class="display-5 fw-bold mb-3">Welcome back, {{ current_user.name }}!</h1>
+                    <p class="lead mb-4">{{ 'Admin Dashboard - Manage your learning platform' if current_user.role == 'admin' else 'Student Dashboard - Continue your learning journey' }}</p>
+                </div>
+                <div class="col-lg-4 text-center">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h5 class="mb-1">{{ current_user.name }}</h5>
+                    <p class="mb-0 opacity-75">{{ current_user.role.title() }}</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages() %}
+    {% if messages %}
+    <div class="container-fluid px-3 px-lg-5 mt-4">
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {% for message in messages %}
+            {{ message }}
+            {% endfor %}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main class="py-5">
+        <div class="container-fluid px-3 px-lg-5">
+            {% if current_user.role == 'admin' %}
+                <!-- Admin Dashboard -->
+                <div class="section-header">
+                    <h2 class="h3 mb-1">Administrative Overview</h2>
+                    <p class="text-muted">Manage users, tests, and monitor student progress</p>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="row mb-5">
+                    <div class="col-lg-6 mb-4">
+                        <div class="card stats-card shadow-sm h-100">
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-success rounded-circle p-3 me-3">
+                                        <i class="fas fa-users text-white fa-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="card-title mb-1">User Management</h5>
+                                        <p class="text-muted mb-0">Register and manage user accounts</p>
+                                    </div>
+                                </div>
+                                <a href="{{ url_for('register') }}" class="btn btn-success w-100">
+                                    <i class="fas fa-user-plus me-2"></i>Register New User
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 mb-4">
+                        <div class="card stats-card shadow-sm h-100">
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-info rounded-circle p-3 me-3">
+                                        <i class="fas fa-book text-white fa-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="card-title mb-1">Test Management</h5>
+                                        <p class="text-muted mb-0">Create and manage assessments</p>
+                                    </div>
+                                </div>
+                                <a href="{{ url_for('create_test') }}" class="btn btn-info text-white w-100">
+                                    <i class="fas fa-plus-circle me-2"></i>Create & Manage Tests
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Users Table -->
+                <div class="section-header">
+                    <h3 class="h4 mb-1">Registered Users</h3>
+                    <p class="text-muted">Manage student and admin accounts</p>
+                </div>
+                <div class="card shadow-sm mb-5">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="px-4 py-3">Name</th>
+                                        <th class="px-4 py-3">Student ID</th>
+                                        <th class="px-4 py-3">Role</th>
+                                        <th class="px-4 py-3">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for user in users %}
+                                    <tr style="background-color: white;">
+                                        <td class="px-4 py-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-primary rounded-circle p-2 me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
+                                                    <i class="fas fa-user text-white"></i>
+                                                </div>
+                                                <div>
+                                                    <h6 class="mb-0">{{ user.name }}</h6>
+                                                    <small class="text-muted">ID: {{ user.id }}</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-3">{{ user.student_id or 'N/A' }}</td>
+                                        <td class="px-4 py-3">
+                                            <span class="badge rounded-pill {{ 'bg-danger' if user.role == 'admin' else 'bg-success' }} fs-6">
+                                                {{ user.role.title() }}
+                                            </span>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('edit_user', user_id=user.id) }}" class="btn btn-outline-warning">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                {% if user.role == 'student' %}
+                                                <a href="{{ url_for('view_student_records', user_id=user.id) }}" class="btn btn-outline-info">
+                                                    <i class="fas fa-chart-line"></i>
+                                                </a>
+                                                {% endif %}
+                                                <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ user.id }}">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                            <!-- Delete Modal -->
+                                            <div class="modal fade" id="deleteModal{{ user.id }}" tabindex="-1">
+                                                <div class="modal-dialog modal-dialog-centered">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header bg-danger text-white">
+                                                            <h5 class="modal-title">Confirm Delete</h5>
+                                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            Are you sure you want to delete user: <strong>{{ user.name }}</strong>?
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                            <a href="{{ url_for('delete_user', user_id=user.id) }}" class="btn btn-danger">Delete</a>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Table -->
+                <div class="section-header">
+                    <h3 class="h4 mb-1">Student Results</h3>
+                    <p class="text-muted">Monitor student performance and progress</p>
+                </div>
+                <div class="card shadow-sm">
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="px-4 py-3">Student</th>
+                                        <th class="px-4 py-3">Test</th>
+                                        <th class="px-4 py-3">Score</th>
+                                        <th class="px-4 py-3">Date</th>
+                                        <th class="px-4 py-3">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for result in results %}
+                                    <tr style="background-color: white;">
+                                        <td class="px-4 py-3">{{ result.user.name }}</td>
+                                        <td class="px-4 py-3">{{ result.test.title }}</td>
+                                        <td class="px-4 py-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress me-3" style="width: 100px; height: 8px;">
+                                                    <div class="progress-bar {{ 'bg-success' if result.score >= 70 else 'bg-warning' if result.score >= 50 else 'bg-danger' }}" 
+                                                         style="width: {{ result.score }}%"></div>
+                                                </div>
+                                                <span class="fw-bold">{{ result.score }}%</span>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-3">{{ result.date_taken.strftime('%m/%d/%Y') }}</td>
+                                        <td class="px-4 py-3">
+                                            <a href="{{ url_for('view_result', result_id=result.id) }}" class="btn btn-sm btn-outline-info">
+                                                <i class="fas fa-eye me-1"></i>View
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            {% else %}
+                <!-- Student Dashboard -->
+                <div class="section-header">
+                    <h2 class="h3 mb-1">Your Learning Journey</h2>
+                    <p class="text-muted">Track your progress and take new assessments</p>
+                </div>
+
+                <!-- Progress Cards -->
+                <div class="row mb-5">
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card stats-card shadow-sm text-center">
+                            <div class="card-body p-4">
+                                <div class="bg-primary rounded-circle p-3 d-inline-flex mb-3">
+                                    <i class="fas fa-book-reader text-white fa-2x"></i>
+                                </div>
+                                <h5 class="card-title">Available Tests</h5>
+                                <h2 class="text-primary mb-3">{{ available_tests_count }}</h2>
+                                <a href="{{ url_for('available_tests') }}" class="btn btn-primary">Take Test</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card stats-card shadow-sm text-center">
+                            <div class="card-body p-4">
+                                <div class="bg-success rounded-circle p-3 d-inline-flex mb-3">
+                                    <i class="fas fa-check-circle text-white fa-2x"></i>
+                                </div>
+                                <h5 class="card-title">Completed</h5>
+                                <h2 class="text-success mb-3">{{ completed_tests_count }}</h2>
+                                <div class="progress" style="height: 8px;">
+                                    {% set progress = (completed_tests_count / available_tests_count * 100) if available_tests_count > 0 else 0 %}
+                                    <div class="progress-bar bg-success" style="width: {{ progress }}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card stats-card shadow-sm text-center">
+                            <div class="card-body p-4">
+                                <div class="bg-info rounded-circle p-3 d-inline-flex mb-3">
+                                    <i class="fas fa-chart-line text-white fa-2x"></i>
+                                </div>
+                                <h5 class="card-title">Progress</h5>
+                                <h2 class="text-info mb-3">{{ progress|int }}%</h2>
+                                <small class="text-muted">Overall completion</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Results -->
+                <div class="section-header">
+                    <h3 class="h4 mb-1">Your Recent Results</h3>
+                    <p class="text-muted">Review your latest test performances</p>
+                </div>
+                <div class="card shadow-sm">
+                    {% if user_results %}
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="px-4 py-3">Test</th>
+                                        <th class="px-4 py-3">Score</th>
+                                        <th class="px-4 py-3">Performance</th>
+                                        <th class="px-4 py-3">Date</th>
+                                        <th class="px-4 py-3">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for result in user_results %}
+                                    <tr style="background-color: white;">
+                                        <td class="px-4 py-3">
+                                            <h6 class="mb-0">{{ result.test.title }}</h6>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <span class="fw-bold fs-5">{{ result.score }}%</span>
+                                        </td>
+                                        <td class="px-4 py-3">
+                                            <div class="progress" style="height: 8px;">
+                                                <div class="progress-bar {{ 'bg-success' if result.score >= 70 else 'bg-warning' if result.score >= 50 else 'bg-danger' }}" 
+                                                     style="width: {{ result.score }}%"></div>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-3">{{ result.date_taken.strftime('%m/%d/%Y') }}</td>
+                                        <td class="px-4 py-3">
+                                            <a href="{{ url_for('view_result', result_id=result.id) }}" class="btn btn-sm btn-outline-info">
+                                                <i class="fas fa-eye me-1"></i>View Details
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-clipboard-list fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No test results yet</h5>
+                        <p class="text-muted">Take your first test to see your performance!</p>
+                        <a href="{{ url_for('available_tests') }}" class="btn btn-primary">Browse Tests</a>
+                    </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container-fluid px-3 px-lg-5">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <p class="mb-0">&copy; {{ now.year if now is defined else '2023' }} SmartExaM</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="mb-0">Empowering education through technology</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

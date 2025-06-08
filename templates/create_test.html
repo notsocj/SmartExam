@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Management - SmartExaM</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="bg-light">
+    <div class="container-fluid px-3 px-lg-5 py-4 py-md-5">
+        <div class="card shadow">
+            <div class="card-body p-3 p-md-4">
+                <div class="d-flex justify-content-between align-items-center flex-wrap mb-4">
+                    <h1 class="card-title mb-2 mb-md-0">Test Management</h1>
+                    <div>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary me-2">Back to Dashboard</a>
+                        <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+                    </div>
+                </div>
+                
+                {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {% for message in messages %}
+                    {{ message }}
+                    {% endfor %}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+                {% endif %}
+                {% endwith %}
+                
+                <ul class="nav nav-tabs mb-4" id="testTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="test-sets-tab" data-bs-toggle="tab" data-bs-target="#test-sets" type="button" role="tab" aria-controls="test-sets" aria-selected="true">Test Sets</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="questions-tab" data-bs-toggle="tab" data-bs-target="#questions" type="button" role="tab" aria-controls="questions" aria-selected="false">Questions</button>
+                    </li>
+                </ul>
+                
+                <div class="tab-content" id="testTabsContent">
+                    <!-- Test Sets Tab -->
+                    <div class="tab-pane fade show active" id="test-sets" role="tabpanel" aria-labelledby="test-sets-tab">
+                        <div class="row">
+                            <div class="col-12 col-lg-5 mb-4">
+                                <div class="card">
+                                    <div class="card-header bg-primary text-white">
+                                        <h3 class="card-title mb-0">{{ 'Edit Test' if test else 'Create New Test' }}</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <form method="POST" action="{{ url_for('create_test_set') }}" class="needs-validation" novalidate>
+                                            <div class="mb-3">
+                                                <label for="test_title" class="form-label">Test Title</label>
+                                                <input type="text" class="form-control" id="test_title" name="test_title" value="{{ test.title if test else '' }}" required>
+                                                <div class="invalid-feedback">
+                                                    Please enter a test title.
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="test_description" class="form-label">Description</label>
+                                                <textarea class="form-control" id="test_description" name="test_description" rows="3">{{ test.description if test else '' }}</textarea>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="time_limit" class="form-label">Time Limit (minutes)</label>
+                                                <input type="number" class="form-control" id="time_limit" name="time_limit" value="{{ test.time_limit if test else '30' }}" min="1" required>
+                                                <div class="invalid-feedback">
+                                                    Please enter a valid time limit.
+                                                </div>
+                                            </div>
+                                            
+                                            <input type="hidden" name="test_id" value="{{ test.id if test else '' }}">
+                                            
+                                            <div class="d-grid gap-2 mt-4">
+                                                <button type="submit" class="btn btn-primary">{{ 'Update Test' if test else 'Create Test' }}</button>
+                                                {% if test %}
+                                                <a href="{{ url_for('create_test') }}" class="btn btn-outline-secondary">Cancel Edit</a>
+                                                {% endif %}
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12 col-lg-7">
+                                <div class="card">
+                                    <div class="card-header bg-primary text-white">
+                                        <h3 class="card-title mb-0">Existing Tests</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        {% if tests %}
+                                        <div class="table-responsive">
+                                            <table class="table table-striped table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Title</th>
+                                                        <th>Questions</th>
+                                                        <th>Time Limit</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for t in tests %}
+                                                    <tr>
+                                                        <td>
+                                                            <div style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                                {{ t.title }}
+                                                            </div>
+                                                        </td>
+                                                        <td>{{ t.questions|length }}</td>
+                                                        <td>{{ t.time_limit }} minutes</td>
+                                                        <td>
+                                                            <div class="d-flex">
+                                                                <a href="{{ url_for('create_test', edit_test=t.id) }}" class="btn btn-sm btn-warning me-1">Edit</a>
+                                                                <a href="{{ url_for('manage_questions', test_id=t.id) }}" class="btn btn-sm btn-info text-white me-1">Questions</a>
+                                                                <form method="POST" action="{{ url_for('delete_test') }}" onsubmit="return confirm('Are you sure you want to delete this test?');">
+                                                                    <input type="hidden" name="test_id" value="{{ t.id }}">
+                                                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                                                </form>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        {% else %}
+                                        <div class="alert alert-info">
+                                            No tests have been created yet.
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Questions Tab -->
+                    <div class="tab-pane fade" id="questions" role="tabpanel" aria-labelledby="questions-tab">
+                        {% if current_test %}
+                        <div class="alert alert-info mb-4">
+                            <h4>Currently Editing: {{ current_test.title }}</h4>
+                            <p>Time Limit: {{ current_test.time_limit }} minutes | Total Questions: {{ current_test.questions|length }}</p>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-12 col-lg-5 mb-4">
+                                <div class="card">
+                                    <div class="card-header bg-primary text-white">
+                                        <h3 class="card-title mb-0">{{ 'Edit Question' if question else 'Create New Question' }}</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <form method="POST" action="{{ url_for('create_question', test_id=current_test.id) }}" enctype="multipart/form-data" class="needs-validation" novalidate>
+                                            <div class="mb-3">
+                                                <label for="question_text" class="form-label">Question Text</label>
+                                                <textarea class="form-control" id="question_text" name="question_text" rows="3" required>{{ question.question_text if question else '' }}</textarea>
+                                                <div class="invalid-feedback">
+                                                    Please enter a question.
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="question_type" class="form-label">Question Type</label>
+                                                <select class="form-select" id="question_type" name="question_type" required>
+                                                    <option value="">Select a type</option>
+                                                    <option value="multiple_choice" {% if question and question.question_type == 'multiple_choice' %}selected{% endif %}>Multiple Choice</option>
+                                                    <option value="identification" {% if question and question.question_type == 'identification' %}selected{% endif %}>Identification</option>
+                                                    <option value="image" {% if question and question.question_type == 'image' %}selected{% endif %}>Image</option>
+                                                </select>
+                                                <div class="invalid-feedback">
+                                                    Please select a question type.
+                                                </div>
+                                            </div>
+                                            
+                                            <div id="choices_container" class="mb-3" style="display: none;">
+                                                <label class="form-label">Choices</label>
+                                                <div id="choices_list">
+                                                    {% if question and question.question_type == 'multiple_choice' and question.choices_list %}
+                                                        {% for choice in question.choices_list %}
+                                                        <div class="input-group mb-2">
+                                                            <input type="text" class="form-control" name="choices" value="{{ choice }}">
+                                                            <button type="button" class="btn btn-outline-danger remove-choice">Remove</button>
+                                                        </div>
+                                                        {% endfor %}
+                                                    {% else %}
+                                                        <div class="input-group mb-2">
+                                                            <input type="text" class="form-control" name="choices">
+                                                            <button type="button" class="btn btn-outline-danger remove-choice">Remove</button>
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                                <button type="button" class="btn btn-outline-primary btn-sm" id="add_choice">Add Choice</button>
+                                            </div>
+                                            
+                                            <div id="image_container" class="mb-3" style="display: none;">
+                                                <label for="image_file" class="form-label">Upload Image</label>
+                                                <input type="file" class="form-control" id="image_file" name="image_file" accept="image/*">
+                                                
+                                                <input type="hidden" id="image_path" name="image_path" value="{{ question.image_path if question and question.image_path else '' }}">
+                                                
+                                                <div class="mt-3" id="image_preview_container" style="{{ 'display: block;' if question and question.image_path else 'display: none;' }}">
+                                                    <label class="form-label">Image Preview</label>
+                                                    <div class="card p-2">
+                                                        <img id="image_preview" class="img-fluid" src="{{ url_for('static', filename=question.image_path) if question and question.image_path else '' }}" alt="Question Image">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label for="correct_answer" class="form-label">Correct Answer</label>
+                                                <input type="text" class="form-control" id="correct_answer" name="correct_answer" value="{{ question.correct_answer if question else '' }}" required>
+                                                <div class="invalid-feedback">
+                                                    Please provide the correct answer.
+                                                </div>
+                                            </div>
+                                            
+                                            <input type="hidden" name="question_id" value="{{ question.id if question else '' }}">
+                                            
+                                            <div class="d-grid gap-2 mt-4">
+                                                <button type="submit" class="btn btn-primary">{{ 'Update Question' if question else 'Create Question' }}</button>
+                                                {% if question %}
+                                                <a href="{{ url_for('manage_questions', test_id=current_test.id) }}" class="btn btn-outline-secondary">Cancel Edit</a>
+                                                {% endif %}
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-12 col-lg-7">
+                                <div class="card">
+                                    <div class="card-header bg-success text-white">
+                                        <h3 class="card-title mb-0">Questions in this Test</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        {% if current_test.questions %}
+                                        <div class="table-responsive">
+                                            <table class="table table-striped table-hover">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Question</th>
+                                                        <th>Type</th>
+                                                        <th>Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for q in current_test.questions %}
+                                                    <tr>
+                                                        <td>
+                                                            <div style="max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                                                {{ q.question_text }}
+                                                            </div>
+                                                        </td>
+                                                        <td>{{ q.question_type }}</td>
+                                                        <td>
+                                                            <div class="d-flex">
+                                                                <a href="{{ url_for('manage_questions', test_id=current_test.id, edit=q.id) }}" class="btn btn-sm btn-warning me-1">Edit</a>
+                                                                <form method="POST" action="{{ url_for('delete_question') }}" onsubmit="return confirm('Are you sure you want to delete this question?');">
+                                                                    <input type="hidden" name="question_id" value="{{ q.id }}">
+                                                                    <input type="hidden" name="test_id" value="{{ current_test.id }}">
+                                                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                                                </form>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        {% else %}
+                                        <div class="alert alert-info">
+                                            No questions have been added to this test yet.
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            <p>Please select a test to manage its questions.</p>
+                            <a href="#test-sets" class="btn btn-primary" data-bs-toggle="tab" data-bs-target="#test-sets">Go to Test Sets</a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Form validation and dynamic form script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Form validation
+            const forms = document.querySelectorAll('.needs-validation');
+            Array.from(forms).forEach(form => {
+                form.addEventListener('submit', event => {
+                    if (!form.checkValidity()) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                    }
+                    form.classList.add('was-validated');
+                }, false);
+            });
+            
+            // Show/hide fields based on question type
+            const questionType = document.getElementById('question_type');
+            const choicesContainer = document.getElementById('choices_container');
+            const imageContainer = document.getElementById('image_container');
+            
+            if (questionType) {
+                function updateFormFields() {
+                    const choiceInputs = choicesContainer.querySelectorAll('input[name="choices"]');
+                    const imageFileInput = document.getElementById('image_file');
+                    const imagePathInput = document.getElementById('image_path');
+                    
+                    if (questionType.value === 'multiple_choice') {
+                        choicesContainer.style.display = 'block';
+                        imageContainer.style.display = 'none';
+                        
+                        // Make choices required for multiple choice
+                        choiceInputs.forEach(input => {
+                            input.setAttribute('required', '');
+                        });
+                        
+                        // Remove image requirements
+                        if (imageFileInput) imageFileInput.removeAttribute('required');
+                        if (imagePathInput) imagePathInput.removeAttribute('required');
+                        
+                    } else if (questionType.value === 'image') {
+                        choicesContainer.style.display = 'none';
+                        imageContainer.style.display = 'block';
+                        
+                        // Remove choices requirements
+                        choiceInputs.forEach(input => {
+                            input.removeAttribute('required');
+                        });
+                        
+                        // Image is optional, but show the container
+                        if (imageFileInput) imageFileInput.removeAttribute('required');
+                        if (imagePathInput) imagePathInput.removeAttribute('required');
+                        
+                    } else { // identification
+                        choicesContainer.style.display = 'none';
+                        imageContainer.style.display = 'none';
+                        
+                        // Remove all special requirements
+                        choiceInputs.forEach(input => {
+                            input.removeAttribute('required');
+                        });
+                        if (imageFileInput) imageFileInput.removeAttribute('required');
+                        if (imagePathInput) imagePathInput.removeAttribute('required');
+                    }
+                }
+                
+                // Initialize form state
+                updateFormFields();
+                
+                // Update form when question type changes
+                questionType.addEventListener('change', updateFormFields);
+                
+                // Add new choice field
+                const addChoiceBtn = document.getElementById('add_choice');
+                const choicesList = document.getElementById('choices_list');
+                
+                if (addChoiceBtn && choicesList) {
+                    addChoiceBtn.addEventListener('click', function() {
+                        const newChoice = document.createElement('div');
+                        newChoice.className = 'input-group mb-2';
+                        newChoice.innerHTML = `
+                            <input type="text" class="form-control" name="choices" ${questionType.value === 'multiple_choice' ? 'required' : ''}>
+                            <button type="button" class="btn btn-outline-danger remove-choice">Remove</button>
+                        `;
+                        choicesList.appendChild(newChoice);
+                        
+                        // Add event listener to the new remove button
+                        newChoice.querySelector('.remove-choice').addEventListener('click', function() {
+                            choicesList.removeChild(newChoice);
+                        });
+                    });
+                    
+                    // Remove choice field
+                    document.addEventListener('click', function(e) {
+                        if (e.target.classList.contains('remove-choice')) {
+                            const choiceDiv = e.target.parentElement;
+                            if (choicesList.children.length > 1) { // Keep at least one choice for multiple choice
+                                choicesList.removeChild(choiceDiv);
+                            }
+                        }
+                    });
+                }
+                
+                // Image preview functionality
+                const imageFileInput = document.getElementById('image_file');
+                const imagePreviewContainer = document.getElementById('image_preview_container');
+                const imagePreview = document.getElementById('image_preview');
+                const imagePathInput = document.getElementById('image_path');
+                
+                if (imageFileInput && imagePreviewContainer && imagePreview && imagePathInput) {
+                    imageFileInput.addEventListener('change', function() {
+                        if (this.files && this.files[0]) {
+                            const reader = new FileReader();
+                            
+                            reader.onload = function(e) {
+                                imagePreview.src = e.target.result;
+                                imagePreviewContainer.style.display = 'block';
+                            }
+                            
+                            reader.readAsDataURL(this.files[0]);
+                            
+                            // Update filename for display purposes
+                            const filename = this.files[0].name;
+                            imagePathInput.value = 'uploads/' + filename;
+                        } else {
+                            imagePreviewContainer.style.display = 'none';
+                        }
+                    });
+                }
+            }
+            
+            // If URL has a tab parameter, activate that tab
+            const urlParams = new URLSearchParams(window.location.search);
+            const tabParam = urlParams.get('tab');
+            if (tabParam === 'questions') {
+                const questionsTab = document.getElementById('questions-tab');
+                if (questionsTab) {
+                    const tab = new bootstrap.Tab(questionsTab);
+                    tab.show();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
