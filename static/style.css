@@ -424,6 +424,54 @@ h1, h2, h3, h4, h5, h6 {
         padding-left: 1rem !important;
         padding-right: 1rem !important;
     }
+      /* Better header button responsiveness */
+    .card-header .d-flex {
+        flex-direction: column !important;
+        align-items: center !important;
+        text-align: center !important;
+        gap: 1rem !important;
+    }
+    
+    .card-header .d-flex > div {
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: row !important;
+        gap: 0.75rem !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-wrap: wrap !important;
+    }
+      /* Ensure all header buttons are properly sized */
+    .card-header .btn {
+        width: auto !important;
+        max-width: 200px !important;
+        margin: 0 auto !important;
+        text-align: center !important;
+        padding: 0.75rem 1rem !important;
+        font-size: 0.9rem !important;
+        min-height: 44px !important;
+        border-radius: 8px !important;
+        flex: 1 1 auto !important;
+    }
+    
+    /* Remove margin-right on mobile for button groups */
+    .me-2 {
+        margin-right: 0 !important;
+        margin-bottom: 0.5rem !important;
+    }
+    
+    /* Card body responsive layout */
+    .card-body .d-flex {
+        flex-direction: column !important;
+        align-items: center !important;
+        text-align: center !important;
+        gap: 1rem !important;
+    }
+    
+    /* Fix button container alignment */
+    .d-flex.justify-content-between {
+        justify-content: center !important;
+    }
 }
 
 /* Tablet optimizations */

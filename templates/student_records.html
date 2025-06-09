@@ -98,7 +98,7 @@
                 <div class="card stats-card shadow-sm text-center bg-success text-white">
                     <div class="card-body p-4">
                         <i class="fas fa-percentage fa-3x mb-3"></i>
-                        <h3 class="mb-2">{{ "%.1f"|format(statistics.completion_rate) }}%</h3>
+                        <h3 class="mb-2">{{ "{:.1f}".format(statistics.completion_rate) }}%</h3>
                         <p class="mb-0">Completion Rate</p>
                         <div class="progress mt-2" style="height: 6px;">
                             <div class="progress-bar bg-light" style="width: {{ statistics.completion_rate }}%"></div>
@@ -109,10 +109,9 @@
             <div class="col-lg-3 col-md-6 mb-4">
                 <div class="card stats-card shadow-sm text-center bg-info text-white">
                     <div class="card-body p-4">
-                        <i class="fas fa-chart-line fa-3x mb-3"></i>
-                        <h3 class="mb-2">{{ "%.1f"|format(statistics.average_score) }}%</h3>
+                        <i class="fas fa-chart-line fa-3x mb-3"></i>                        <h3 class="mb-2">{{ "{:.1f}".format(statistics.average_score) }}%</h3>
                         <p class="mb-0">Average Score</p>
-                        <small class="opacity-75">Highest: {{ "%.1f"|format(statistics.highest_score) }}%</small>
+                        <small class="opacity-75">Highest: {{ "{:.1f}".format(statistics.highest_score) }}%</small>
                     </div>
                 </div>
             </div>
@@ -187,36 +186,35 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for result in results %}
+                            {% for res in results %}
                             <tr style="background-color: white;">
                                 <td class="px-4 py-3">
-                                    <h6 class="mb-0">{{ result.test.title }}</h6>
-                                    <small class="text-muted">{{ result.test.description[:50] }}{% if result.test.description|length > 50 %}...{% endif %}</small>
-                                </td>
-                                <td class="px-4 py-3">
+                                    <h6 class="mb-0">{{ res.test.title }}</h6>
+                                    <small class="text-muted">{{ res.test.description[:50] }}{% if res.test.description|length > 50 %}...{% endif %}</small>
+                                </td>                                <td class="px-4 py-3">
                                     <div class="d-flex align-items-center">
                                         <div class="progress me-3" style="width: 80px; height: 8px;">
-                                            <div class="progress-bar {{ 'bg-success' if result.score >= 90 else 'bg-primary' if result.score >= 70 else 'bg-warning' if result.score >= 50 else 'bg-danger' }}" 
-                                                 style="width: {{ result.score }}%"></div>
+                                            <div class="progress-bar {{ 'bg-success' if res.score >= 90 else 'bg-primary' if res.score >= 70 else 'bg-warning' if res.score >= 50 else 'bg-danger' }}" 
+                                                 style="width: {{ res.score }}%"></div>
                                         </div>
-                                        <span class="fw-bold">{{ "%.1f"|format(result.score) }}%</span>
+                                        <span class="fw-bold">{{ "{:.1f}".format(res.score) }}%</span>
                                     </div>
                                 </td>
                                 <td class="px-4 py-3">
-                                    {% if result.score >= 90 %}
+                                    {% if res.score >= 90 %}
                                         <span class="badge bg-success grade-badge">Excellent</span>
-                                    {% elif result.score >= 70 %}
+                                    {% elif res.score >= 70 %}
                                         <span class="badge bg-primary grade-badge">Good</span>
-                                    {% elif result.score >= 50 %}
+                                    {% elif res.score >= 50 %}
                                         <span class="badge bg-warning grade-badge">Fair</span>
                                     {% else %}
                                         <span class="badge bg-danger grade-badge">Poor</span>
                                     {% endif %}
                                 </td>
-                                <td class="px-4 py-3">{{ result.date_taken.strftime('%Y-%m-%d') }}</td>
-                                <td class="px-4 py-3">{{ result.date_taken.strftime('%H:%M') }}</td>
+                                <td class="px-4 py-3">{{ res.date_taken.strftime('%Y-%m-%d') }}</td>
+                                <td class="px-4 py-3">{{ res.date_taken.strftime('%H:%M') }}</td>
                                 <td class="px-4 py-3">
-                                    <a href="{{ url_for('view_result', result_id=result.id) }}" class="btn btn-sm btn-outline-info">
+                                    <a href="{{ url_for('view_result', result_id=res.id) }}" class="btn btn-sm btn-outline-info">
                                         <i class="fas fa-eye me-1"></i>View Details
                                     </a>
                                 </td>

@@ -1,13 +1,17 @@
-from flask import Flask, render_template, redirect, url_for, flash, request, jsonify
+from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, make_response
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_migrate import Migrate
 from functools import wraps
+import csv
+import io
+import json
+import os
 from models import db, User, Result, Question, Test
 from config import config
 from datetime import datetime
+from werkzeug.utils import secure_filename
 import json
 import os
-from werkzeug.utils import secure_filename
 
 # Get environment configuration
 config_name = os.environ.get('FLASK_ENV', 'default')
@@ -171,20 +175,36 @@ def edit_user(user_id):
     
     return render_template('edit_user.html', user=user)
 
-@app.route('/user/delete/<int:user_id>')
+@app.route('/user/delete/<int:user_id>', methods=['POST'])
 @login_required
 @admin_required
 def delete_user(user_id):
-    user = User.query.get_or_404(user_id)
+    try:
+        user = User.query.get_or_404(user_id)
+        
+        # Prevent deleting yourself
+        if user.id == current_user.id:
+            flash('You cannot delete your own account', 'error')
+            return redirect(url_for('dashboard'))
+        
+        # Store user name for success message
+        user_name = user.name
+        
+        # Delete all results associated with this user first
+        results = Result.query.filter_by(user_id=user_id).all()
+        for result in results:
+            db.session.delete(result)
+        
+        # Then delete the user
+        db.session.delete(user)
+        db.session.commit()
+        
+        flash(f'User "{user_name}" deleted successfully', 'success')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred while deleting the user. Please try again.', 'error')
     
-    # Prevent deleting yourself
-    if user.id == current_user.id:
-        flash('You cannot delete your own account')
-        return redirect(url_for('dashboard'))
-    
-    db.session.delete(user)
-    db.session.commit()
-    flash('User deleted successfully')
     return redirect(url_for('dashboard'))
 
 @app.route('/result/<int:result_id>')
@@ -201,6 +221,92 @@ def view_result(result_id):
     result_data = json.loads(result.raw_data) if result.raw_data else {}
     
     return render_template('result.html', result=result, result_data=result_data)
+
+@app.route('/export_result_csv/<int:result_id>')
+@login_required
+def export_result_csv(result_id):
+    result = Result.query.get_or_404(result_id)
+    
+    # Only admin or the owner can export their result
+    if current_user.role != 'admin' and result.user_id != current_user.id:
+        flash('You do not have permission to export this result')
+        return redirect(url_for('dashboard'))
+    
+    # Get all results for this user
+    user_results = Result.query.filter_by(user_id=result.user_id).order_by(Result.date_taken.desc()).all()
+    
+    # Create CSV content
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Find the maximum number of questions across all tests to create consistent columns
+    max_questions = 0
+    all_test_data = {}
+    
+    for user_result in user_results:
+        if user_result.raw_data:
+            result_data = json.loads(user_result.raw_data)
+            all_test_data[user_result.id] = result_data
+            max_questions = max(max_questions, len(result_data))
+      # Create header row
+    header = ['Timestamp', 'Student Name', 'Student ID', 'Test Name', 'Score']
+    
+    # Add question columns for maximum questions found
+    for i in range(1, max_questions + 1):
+        header.append(f'Q{i}')
+    
+    # Add summary columns
+    header.extend(['Total Questions', 'Correct Answers', 'Percentage'])
+    
+    # Write header
+    writer.writerow(header)
+      # Write data for each test result
+    for user_result in user_results:
+        if user_result.raw_data:
+            result_data = json.loads(user_result.raw_data)
+            correct_count = sum(1 for data in result_data.values() if data.get('is_correct', False))
+            total_count = len(result_data)
+        else:
+            result_data = {}
+            correct_count = 0
+            total_count = 0
+          # Create score string to avoid Excel date formatting - add quotes to prevent date interpretation
+        score_text = f'"{correct_count}/{total_count}"' if total_count > 0 else '"0/0"'
+        
+        # Create data row
+        row = [
+            user_result.date_taken.strftime('%d/%m/%Y %H:%M'),  # Timestamp
+            user_result.user.name,  # Student Name  
+            user_result.user.student_id,  # Student ID
+            user_result.test.title,  # Test Name
+            score_text  # Score (fraction format)
+        ]
+        
+        # Add user answers for each question (fill empty cells for tests with fewer questions)
+        for i in range(max_questions):
+            if i < len(result_data):
+                question_data = list(result_data.values())[i]
+                row.append(question_data.get('user_answer', ''))
+            else:
+                row.append('')  # Empty cell for tests with fewer questions
+        
+        # Add summary data
+        row.extend([
+            total_count if total_count > 0 else 'N/A',  # Total Questions
+            correct_count if total_count > 0 else 'N/A',  # Correct Answers
+            f"{user_result.score:.1f}%" if user_result.score is not None else 'N/A'  # Percentage
+        ])
+        
+        # Write data row
+        writer.writerow(row)
+    
+    # Create response
+    output.seek(0)
+    response = make_response(output.getvalue())
+    response.headers['Content-Type'] = 'text/csv'
+    response.headers['Content-Disposition'] = f'attachment; filename={result.user.name.replace(" ", "_")}_All_Tests_Export_{datetime.now().strftime("%Y%m%d")}.csv'
+    
+    return response
 
 # Add this function to handle file uploads
 def allowed_file(filename):
@@ -278,15 +384,21 @@ def delete_test():
     test_id = request.form.get('test_id')
     test = Test.query.get_or_404(test_id)
     
+    # Delete all results associated with this test first
+    results = Result.query.filter_by(test_id=test_id).all()
+    for result in results:
+        db.session.delete(result)
+    
     # Delete all questions associated with this test
-    for question in test.questions:
+    questions = Question.query.filter_by(test_id=test_id).all()
+    for question in questions:
         db.session.delete(question)
     
-    # Delete the test
+    # Finally, delete the test
     db.session.delete(test)
     db.session.commit()
     
-    flash('Test and all its questions deleted successfully')
+    flash('Test updated successfully')
     return redirect(url_for('create_test'))
 
 @app.route('/manage_questions/<int:test_id>')
@@ -494,8 +606,7 @@ def submit_test(test_id):
     
     db.session.add(result)
     db.session.commit()
-    
-    # Redirect to result page
+      # Redirect to result page
     flash(f'Test submitted successfully. Your score: {score:.1f}%')
     return redirect(url_for('view_result', result_id=result.id))
 

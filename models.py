@@ -12,9 +12,8 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(128))
     role = db.Column(db.String(20), default='student')  # 'admin' or 'student'
-    
-    # Add relationship to results
-    results = db.relationship('Result', backref='user', lazy=True)
+      # Add relationship to results with cascade delete
+    results = db.relationship('Result', backref='user', lazy=True, cascade='all, delete-orphan')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -25,13 +24,10 @@ class User(UserMixin, db.Model):
 class Result(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    test_id = db.Column(db.Integer, db.ForeignKey('test.id'), nullable=False)
+    test_id = db.Column(db.Integer, db.ForeignKey('test.id', ondelete='CASCADE'), nullable=False)
     score = db.Column(db.Float, nullable=False)
     date_taken = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     raw_data = db.Column(db.Text)  # Store JSON or other structured data
-    
-    # Add relationship to test
-    test = db.relationship('Test', backref='results', lazy=True)
 
 class Test(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -41,15 +37,18 @@ class Test(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Add relationship to questions
-    questions = db.relationship('Question', backref='test', lazy=True)
+    # Add relationship to questions with cascade delete
+    questions = db.relationship('Question', backref='test', lazy=True, cascade='all, delete-orphan')
+    
+    # Add relationship to results with cascade delete
+    results = db.relationship('Result', backref='test', lazy=True, cascade='all, delete-orphan')
     
     def __repr__(self):
         return f'<Test {self.title}>'
 
 class Question(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    test_id = db.Column(db.Integer, db.ForeignKey('test.id'), nullable=False)
+    test_id = db.Column(db.Integer, db.ForeignKey('test.id', ondelete='CASCADE'), nullable=False)
     question_text = db.Column(db.Text, nullable=False)
     question_type = db.Column(db.String(20), nullable=False)  # 'multiple_choice', 'identification', or 'image'
     choices = db.Column(db.Text)  # Stored as JSON for multiple-choice questions
