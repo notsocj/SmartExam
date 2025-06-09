@@ -124,22 +124,183 @@
         
         .dropdown-menu {
             z-index: 1035;
-        }
-
-        @media (max-width: 768px) {
-            .dashboard-summary-card {
-                padding: 30px 20px;
+        }        @media (max-width: 991px) {
+            .dashboard-summary-card .col-lg-8 {
+                margin-bottom: 20px;
+                text-align: center !important;
             }
             
-            .user-avatar-modern {
-                width: 60px;
-                height: 60px;
-                font-size: 1.5rem;
-                margin-bottom: 15px;
+            .dashboard-summary-card .col-lg-4 {
+                text-align: center !important;
+            }
+        }        @media (max-width: 768px) {
+            /* Force all admin card content to center */
+            .stats-card .card-body {
+                text-align: center !important;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+            
+            .stats-card .d-flex.align-items-center {
+                flex-direction: column !important;
+                text-align: center !important;
+                justify-content: center !important;
+                align-items: center !important;
+                width: 100% !important;
+            }
+            
+            .stats-card .d-flex.align-items-center .me-3 {
+                margin-right: 0 !important;
+                margin-bottom: 15px !important;
+                margin-left: 0 !important;
+            }
+            
+            .stats-card .d-flex.align-items-center > div:first-child {
+                margin: 0 auto 15px auto !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+              /* Keep icons small and rounded */
+            .bg-success.rounded-circle,
+            .bg-info.rounded-circle,
+            .bg-primary.rounded-circle {
+                width: 32px !important;
+                height: 32px !important;
+                margin: 0 auto 12px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+            
+            .dashboard-summary-card {
+                padding: 25px 20px !important;
             }
             
             .dashboard-title {
-                font-size: 24px;
+                font-size: 24px !important;
+            }
+            
+            .user-avatar-modern {
+                width: 60px !important;
+                height: 60px !important;
+                font-size: 1.5rem !important;
+            }
+        }        @media (max-width: 576px) {
+            .bg-primary.rounded-circle,
+            .bg-success.rounded-circle,
+            .bg-info.rounded-circle {
+                width: 30px !important;
+                height: 30px !important;
+                margin: 0 auto 10px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+            
+            .fa-lg {
+                font-size: 1rem !important;
+            }
+            
+            .fa-2x {
+                font-size: 1.3rem !important;
+            }
+            
+            .card-title {
+                font-size: 1rem !important;
+                margin-bottom: 8px !important;
+            }
+            
+            .text-muted {
+                font-size: 0.85rem !important;
+            }
+        }@media (max-width: 480px) {
+            .bg-primary.rounded-circle,
+            .bg-success.rounded-circle,
+            .bg-info.rounded-circle {
+                width: 40px !important;
+                height: 40px !important;
+                margin: 0 auto 10px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+            
+            .fa-lg {
+                font-size: 1rem !important;
+            }
+            
+            .fa-2x {
+                font-size: 1.3rem !important;
+            }
+            
+            .card-title {
+                font-size: 0.9rem !important;
+                margin-bottom: 6px !important;
+            }
+            
+            .text-muted {
+                font-size: 0.8rem !important;
+            }
+            
+            .btn {
+                font-size: 0.85rem !important;
+                padding: 8px 16px !important;
+            }
+        }
+
+        /* Ensure proper centering on all screen sizes */
+        .dashboard-summary-card .row {
+            justify-content: center;
+            align-items: center;
+        }
+
+        .dashboard-summary-card .col-lg-4 {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }        /* Additional mobile-specific centering for admin cards */
+        @media (max-width: 991px) {
+            .stats-card .d-flex {
+                flex-direction: column !important;
+                align-items: center !important;
+                text-align: center !important;
+            }
+            
+            .stats-card .d-flex > div:first-child {
+                margin-bottom: 15px !important;
+                margin-right: 0 !important;
+                margin-left: 0 !important;
+            }
+        }
+        
+        @media (max-width: 767px) {
+            /* Force admin card icons to center */
+            .stats-card .bg-success,
+            .stats-card .bg-info {
+                margin: 0 auto 15px !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+            }
+            
+            .stats-card .card-body > .d-flex {
+                flex-direction: column !important;
+                align-items: center !important;
+                text-align: center !important;
+                width: 100% !important;
+            }
+            
+            .stats-card .card-body > .d-flex > div {
+                text-align: center !important;
+                margin: 0 !important;
+            }
+            
+            .stats-card .card-body > .d-flex > div:first-child {
+                margin-bottom: 15px !important;
             }
         }
     </style>
@@ -184,7 +345,7 @@
     <div class="container-fluid px-3 px-lg-5 pt-4 pb-2">
         <div class="dashboard-summary-card">
             <div class="row align-items-center h-100">
-                <div class="col-lg-8">
+                <div class="col-lg-8 text-center text-lg-start">
                     <h1 class="dashboard-title">Welcome back, {{ current_user.name }}!</h1>
                     <p class="lead mb-0" style="color: rgba(255, 255, 255, 0.9); font-weight: 500;">{{ 'Admin Dashboard - Manage your learning platform' if current_user.role == 'admin' else 'Student Dashboard - Continue your learning journey' }}</p>
                 </div>
