@@ -1,6 +1,6 @@
-SmartExaM - Online Examination System
-A comprehensive web-based examination platform built with Flask, designed for educational institutions to conduct online tests and assessments.
+SmartExaM – Online Examination System
 
+A comprehensive web-based examination platform built with Flask, designed for educational institutions to conduct online tests and assessments.
 
 Overview
 
