@@ -34,6 +34,7 @@ class Test(db.Model):
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text)
     time_limit = db.Column(db.Integer, nullable=False)  # Time limit in minutes
+    learning_resource_id = db.Column(db.Integer, db.ForeignKey('learning_resource.id'), nullable=True)  # Link to learning resource
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     
@@ -56,3 +57,37 @@ class Question(db.Model):
     image_path = db.Column(db.String(255))  # Only for image questions
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+class LearningResource(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text)
+    resource_type = db.Column(db.String(20), nullable=False)  # 'video', 'document', 'pdf'
+    file_path = db.Column(db.String(500), nullable=False)
+    thumbnail_path = db.Column(db.String(500))  # For video thumbnails
+    file_size = db.Column(db.BigInteger)  # File size in bytes
+    duration = db.Column(db.Integer)  # Duration in seconds for videos
+    created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+    
+    # Relationship to tests (one resource can have multiple linked tests)
+    linked_tests = db.relationship('Test', backref='learning_resource', lazy=True)
+    
+    def __repr__(self):
+        return f'<LearningResource {self.title}>'
+
+class StudentProgress(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    resource_id = db.Column(db.Integer, db.ForeignKey('learning_resource.id', ondelete='CASCADE'), nullable=False)
+    progress_percentage = db.Column(db.Float, default=0.0)  # 0-100
+    last_position = db.Column(db.Integer, default=0)  # For video playback position
+    completed = db.Column(db.Boolean, default=False)
+    time_spent = db.Column(db.Integer, default=0)  # Time spent in seconds
+    first_accessed = db.Column(db.DateTime, default=datetime.utcnow)
+    last_accessed = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Composite unique constraint
+    __table_args__ = (db.UniqueConstraint('user_id', 'resource_id', name='unique_user_resource'),)

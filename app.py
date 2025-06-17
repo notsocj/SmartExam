@@ -1,17 +1,15 @@
-from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, make_response
+from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, make_response, send_from_directory
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_migrate import Migrate
 from functools import wraps
-import csv
-import io
-import json
-import os
-from models import db, User, Result, Question, Test
+from models import db, User, Result, Question, Test, LearningResource, StudentProgress
 from config import config
 from datetime import datetime
 from werkzeug.utils import secure_filename
-import json
 import os
+import json
+import csv
+import io
 
 # Get environment configuration
 config_name = os.environ.get('FLASK_ENV', 'default')
@@ -314,6 +312,17 @@ def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+# Learning Resources File Upload Functions
+def allowed_learning_file(filename):
+    ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt'}
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def get_file_size(file_path):
+    try:
+        return os.path.getsize(file_path)
+    except:
+        return 0
+
 @app.route('/create_test')
 @login_required
 @admin_required
@@ -357,19 +366,22 @@ def create_test_set():
     test_description = request.form.get('test_description', '')
     time_limit = int(request.form.get('time_limit', 30))
     test_id = request.form.get('test_id', '')
+    learning_resource_id = request.form.get('learning_resource_id', '') or None
     
     if test_id:  # Update existing test
         test = Test.query.get_or_404(test_id)
         test.title = test_title
         test.description = test_description
         test.time_limit = time_limit
+        test.learning_resource_id = learning_resource_id
         test.updated_at = datetime.utcnow()
         flash('Test updated successfully')
     else:  # Create new test
         test = Test(
             title=test_title,
             description=test_description,
-            time_limit=time_limit
+            time_limit=time_limit,
+            learning_resource_id=learning_resource_id
         )
         db.session.add(test)
         flash('Test created successfully')
@@ -584,6 +596,7 @@ def submit_test(test_id):
             'correct_answer': question.correct_answer,
             'is_correct': is_correct
         }
+        
         if question.image_path:
             question_data['image_path'] = question.image_path
             
@@ -663,6 +676,257 @@ def view_student_records(user_id):
                           results=results, 
                           statistics=statistics,
                           now=datetime.now())
+
+@app.route('/learning_resources')
+@login_required
+def learning_resources():
+    if current_user.role == 'admin':
+        # Admin view - manage all resources
+        resources = LearningResource.query.filter_by(is_active=True).order_by(LearningResource.created_at.desc()).all()
+        tests = Test.query.all()  # For linking tests to resources
+        return render_template('admin_learning_resources.html', resources=resources, tests=tests)
+    else:
+        # Student view - view available resources
+        resources = LearningResource.query.filter_by(is_active=True).order_by(LearningResource.created_at.desc()).all()
+        
+        # Get student progress for each resource
+        progress_data = {}
+        for resource in resources:
+            progress = StudentProgress.query.filter_by(
+                user_id=current_user.id, 
+                resource_id=resource.id
+            ).first()
+            progress_data[resource.id] = progress
+        
+        return render_template('student_learning_resources.html', 
+                             resources=resources, 
+                             progress_data=progress_data)
+
+@app.route('/upload_learning_resource', methods=['POST'])
+@login_required
+@admin_required
+def upload_learning_resource():
+    try:
+        title = request.form.get('title')
+        description = request.form.get('description', '')
+        
+        if 'resource_file' not in request.files:
+            flash('No file selected')
+            return redirect(url_for('learning_resources'))
+        
+        file = request.files['resource_file']
+        if file.filename == '':
+            flash('No file selected')
+            return redirect(url_for('learning_resources'))
+        
+        if file and allowed_learning_file(file.filename):
+            filename = secure_filename(file.filename)
+            
+            # Create unique filename to avoid conflicts
+            timestamp = str(int(datetime.now().timestamp()))
+            name, ext = os.path.splitext(filename)
+            unique_filename = f"{name}_{timestamp}{ext}"
+            
+            file_path = os.path.join(app.config['LEARNING_RESOURCES_FOLDER'], unique_filename)
+            file.save(file_path)
+            
+            # Determine resource type based on file extension
+            file_ext = ext.lower()
+            if file_ext in ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm']:
+                resource_type = 'video'
+            elif file_ext == '.pdf':
+                resource_type = 'pdf'
+            else:
+                resource_type = 'document'
+            
+            # Get file size
+            file_size = get_file_size(file_path)
+            
+            # Create learning resource record
+            resource = LearningResource(
+                title=title,
+                description=description,
+                resource_type=resource_type,
+                file_path=f'learning_resources/{unique_filename}',
+                file_size=file_size,
+                created_by=current_user.id
+            )
+            
+            db.session.add(resource)
+            db.session.commit()
+            
+            flash('Learning resource uploaded successfully!')
+        else:
+            flash('Invalid file type. Please upload a supported format.')
+    
+    except Exception as e:
+        flash(f'Error uploading file: {str(e)}')
+        db.session.rollback()
+    
+    return redirect(url_for('learning_resources'))
+
+@app.route('/edit_learning_resource/<int:resource_id>', methods=['POST'])
+@login_required
+@admin_required
+def edit_learning_resource(resource_id):
+    try:
+        resource = LearningResource.query.get_or_404(resource_id)
+        
+        resource.title = request.form.get('title')
+        resource.description = request.form.get('description', '')
+        resource.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        flash('Learning resource updated successfully!')
+    
+    except Exception as e:
+        flash(f'Error updating resource: {str(e)}')
+        db.session.rollback()
+    
+    return redirect(url_for('learning_resources'))
+
+@app.route('/delete_learning_resource/<int:resource_id>', methods=['POST'])
+@login_required
+@admin_required
+def delete_learning_resource(resource_id):
+    try:
+        resource = LearningResource.query.get_or_404(resource_id)
+        
+        # Delete the actual file
+        file_path = os.path.join(app.static_folder, 'uploads', resource.file_path)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        
+        # Delete progress records
+        StudentProgress.query.filter_by(resource_id=resource_id).delete()
+        
+        # Unlink any tests associated with this resource
+        tests = Test.query.filter_by(learning_resource_id=resource_id).all()
+        for test in tests:
+            test.learning_resource_id = None
+        
+        db.session.delete(resource)
+        db.session.commit()
+        
+        flash('Learning resource deleted successfully!')
+    
+    except Exception as e:
+        flash(f'Error deleting resource: {str(e)}')
+        db.session.rollback()
+    
+    return redirect(url_for('learning_resources'))
+
+@app.route('/view_resource/<int:resource_id>')
+@login_required
+def view_resource(resource_id):
+    resource = LearningResource.query.get_or_404(resource_id)
+    
+    # Get or create progress record for students
+    progress = None
+    if current_user.role == 'student':
+        progress = StudentProgress.query.filter_by(
+            user_id=current_user.id,
+            resource_id=resource_id
+        ).first()
+        
+        if not progress:
+            progress = StudentProgress(
+                user_id=current_user.id,
+                resource_id=resource_id
+            )
+            db.session.add(progress)
+            db.session.commit()
+        else:
+            # Update last accessed time
+            progress.last_accessed = datetime.utcnow()
+            db.session.commit()
+    
+    # For PDF and non-video resources, check if it's a direct file access request
+    if resource.resource_type in ['pdf', 'document'] and request.args.get('direct') == '1':
+        # Serve the file directly for new tab opening
+        return send_from_directory(app.config['LEARNING_RESOURCES_FOLDER'], 
+                                 os.path.basename(resource.file_path))
+    
+    return render_template('view_resource.html', resource=resource, progress=progress)
+
+@app.route('/update_progress/<int:resource_id>', methods=['POST'])
+@login_required
+def update_progress(resource_id):
+    if current_user.role != 'student':
+        return jsonify({'success': False, 'message': 'Only students can update progress'})
+    
+    try:
+        progress = StudentProgress.query.filter_by(
+            user_id=current_user.id,
+            resource_id=resource_id
+        ).first()
+        
+        if not progress:
+            progress = StudentProgress(
+                user_id=current_user.id,
+                resource_id=resource_id
+            )
+            db.session.add(progress)
+        
+        data = request.get_json()
+        progress.progress_percentage = data.get('progress', 0)
+        progress.last_position = data.get('position', 0)
+        progress.time_spent = data.get('time_spent', 0)
+        progress.completed = data.get('completed', False)
+        progress.last_accessed = datetime.utcnow()
+        
+        db.session.commit()
+        
+        return jsonify({'success': True})
+    
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/link_test_to_resource', methods=['POST'])
+@login_required
+@admin_required
+def link_test_to_resource():
+    try:
+        test_id = request.form.get('test_id')
+        resource_id = request.form.get('resource_id')
+        
+        test = Test.query.get_or_404(test_id)
+        resource = LearningResource.query.get_or_404(resource_id)
+        
+        test.learning_resource_id = resource_id
+        db.session.commit()
+        
+        flash(f'Test "{test.title}" linked to resource "{resource.title}" successfully!')
+    
+    except Exception as e:
+        flash(f'Error linking test to resource: {str(e)}')
+        db.session.rollback()
+    
+    return redirect(url_for('learning_resources'))
+
+@app.route('/unlink_test_from_resource/<int:test_id>', methods=['POST'])
+@login_required
+@admin_required
+def unlink_test_from_resource(test_id):
+    try:
+        test = Test.query.get_or_404(test_id)
+        test.learning_resource_id = None
+        db.session.commit()
+        
+        flash(f'Test "{test.title}" unlinked from resource successfully!')
+    
+    except Exception as e:
+        flash(f'Error unlinking test: {str(e)}')
+        db.session.rollback()
+    
+    return redirect(url_for('learning_resources'))
+
+@app.route('/resource_file/<path:filename>')
+@login_required
+def resource_file(filename):
+    # Serve files from the learning resources folder
+    return send_from_directory(app.config['LEARNING_RESOURCES_FOLDER'], filename)
 
 @app.route('/')
 def index():

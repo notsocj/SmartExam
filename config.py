@@ -14,6 +14,16 @@ class Config:
         f'sqlite:///{os.path.join(DB_DIR, "walo.db")}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
+    # File upload settings
+    UPLOAD_FOLDER = os.path.join(basedir, 'static', 'uploads')
+    LEARNING_RESOURCES_FOLDER = os.path.join(UPLOAD_FOLDER, 'learning_resources')
+    MAX_CONTENT_LENGTH = 500 * 1024 * 1024  # 500MB max file size
+    
+    # Create upload directories if they don't exist
+    for folder in [UPLOAD_FOLDER, LEARNING_RESOURCES_FOLDER]:
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+    
 class DevelopmentConfig(Config):
     DEBUG = True
     

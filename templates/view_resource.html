@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{{ resource.title }} - SmartExaM</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .resource-viewer {
+            min-height: 70vh;
+            background: #f8f9fa;
+            border-radius: 12px;
+            position: relative;
+        }
+        
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 500px;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+        
+        .document-container {
+            width: 100%;
+            height: 70vh;
+            border: none;
+            border-radius: 12px;
+        }
+        
+        .fullscreen-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .fullscreen-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+        }
+        
+        .open-new-tab-btn {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 10px 15px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .open-new-tab-btn:hover {
+            background: #0056b3;
+            color: white;
+        }
+        
+        .progress-section {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            border-radius: 16px;
+            padding: 20px;
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        .progress-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+        }
+        
+        .document-wrapper {
+            position: relative;
+            width: 100%;
+            height: 70vh;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .video-container {
+                height: 250px;
+            }
+            
+            .document-container {
+                height: 60vh;
+            }
+            
+            .fullscreen-btn, .open-new-tab-btn {
+                top: 5px;
+                padding: 8px 12px;
+                font-size: 0.9rem;
+            }
+            
+            .progress-circle {
+                width: 60px;
+                height: 60px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+        <div class="container-fluid px-3 px-lg-5">
+            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-graduation-cap me-2"></i>SmartExaM
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="{{ url_for('learning_resources') }}">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Resources
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid px-3 px-lg-5 py-4">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h1 class="h3 mb-2 text-primary">{{ resource.title }}</h1>
+                                <p class="text-muted mb-0">{{ resource.description }}</p>
+                            </div>
+                            <div class="col-md-4 text-md-end">
+                                <span class="badge bg-primary fs-6 px-3 py-2">{{ resource.resource_type.title() }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Main Content -->
+            <div class="col-lg-8 mb-4">
+                <div class="card shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="resource-viewer">
+                            {% if resource.resource_type == 'video' %}
+                                <!-- Video Player -->
+                                <div class="video-container">
+                                    <button class="fullscreen-btn" onclick="toggleFullscreen()">
+                                        <i class="fas fa-expand me-1"></i>Fullscreen
+                                    </button>
+                                    <video id="video-player" controls style="width: 100%; height: 100%; object-fit: contain;">
+                                        <source src="{{ url_for('resource_file', filename=resource.file_path.split('/')[-1]) }}" type="video/mp4">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                </div>
+                            {% elif resource.resource_type == 'pdf' %}
+                                <!-- PDF Viewer with New Tab Option -->
+                                <div class="document-wrapper">
+                                    <button class="open-new-tab-btn" onclick="openInNewTab()">
+                                        <i class="fas fa-external-link-alt me-1"></i>Open in New Tab
+                                    </button>
+                                    <iframe class="document-container" 
+                                            src="{{ url_for('view_resource', resource_id=resource.id, direct=1) }}#toolbar=1&navpanes=1&scrollbar=1"
+                                            title="{{ resource.title }}">
+                                        <p>Your browser does not support PDFs. 
+                                           <a href="{{ url_for('view_resource', resource_id=resource.id, direct=1) }}" target="_blank">Download the PDF</a>
+                                        </p>
+                                    </iframe>
+                                </div>
+                            {% else %}
+                                <!-- Document Viewer with New Tab Option -->
+                                <div class="document-wrapper">
+                                    <button class="open-new-tab-btn" onclick="openInNewTab()">
+                                        <i class="fas fa-external-link-alt me-1"></i>Open in New Tab
+                                    </button>
+                                    <iframe class="document-container" 
+                                            src="{{ url_for('view_resource', resource_id=resource.id, direct=1) }}"
+                                            title="{{ resource.title }}">
+                                        <p>Your browser does not support this document type. 
+                                           <a href="{{ url_for('view_resource', resource_id=resource.id, direct=1) }}" target="_blank">Download the file</a>
+                                        </p>
+                                    </iframe>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                {% if current_user.role == 'student' and progress %}
+                <!-- Progress Section -->
+                <div class="progress-section">
+                    <div class="text-center">
+                        <div class="progress-circle">
+                            <span class="fw-bold fs-4">{{ progress.progress_percentage|round|int }}%</span>
+                        </div>
+                        <h5 class="mb-3">Your Progress</h5>
+                        <div class="progress bg-light bg-opacity-25 mb-3" style="height: 8px;">
+                            <div class="progress-bar bg-light" style="width: {{ progress.progress_percentage }}%"></div>
+                        </div>
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <div class="fw-bold">{{ (progress.time_spent / 60)|round|int }}</div>
+                                <small>Minutes</small>
+                            </div>
+                            <div class="col-6">
+                                <div class="fw-bold">
+                                    {% if progress.completed %}
+                                        <i class="fas fa-check-circle"></i> Done
+                                    {% else %}
+                                        <i class="fas fa-clock"></i> Learning
+                                    {% endif %}
+                                </div>
+                                <small>Status</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Linked Tests -->
+                {% if resource.linked_tests %}
+                <div class="card shadow-sm mb-4" style="background: linear-gradient(135deg, #007bff, #0056b3); color: white;">
+                    <div class="card-body">
+                        <h5 class="mb-3"><i class="fas fa-quiz me-2"></i>Related Tests</h5>
+                        {% for test in resource.linked_tests %}
+                        <div style="background: rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 15px; margin-bottom: 15px;">
+                            <h6 class="mb-2">{{ test.title }}</h6>
+                            <p class="mb-3 small">{{ test.description[:100] }}{% if test.description|length > 100 %}...{% endif %}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small><i class="fas fa-clock me-1"></i>{{ test.time_limit }} min</small>
+                                <a href="{{ url_for('take_test', test_id=test.id) }}" class="btn btn-light btn-sm">
+                                    <i class="fas fa-play me-1"></i>Start Test
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Resource Info -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Resource Information</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">Type</small>
+                                <div class="fw-semibold">{{ resource.resource_type.title() }}</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Size</small>
+                                <div class="fw-semibold">{{ (resource.file_size / 1024 / 1024)|round(1) }} MB</div>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-6">
+                                <small class="text-muted">Added</small>
+                                <div class="fw-semibold">{{ resource.created_at.strftime('%m/%d/%Y') }}</div>
+                            </div>
+                            {% if resource.duration %}
+                            <div class="col-6">
+                                <small class="text-muted">Duration</small>
+                                <div class="fw-semibold">{{ (resource.duration / 60)|round|int }} min</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Progress tracking variables
+        let startTime = Date.now();
+        let lastPosition = 0;
+        
+        // Video player functionality
+        {% if resource.resource_type == 'video' %}
+        const video = document.getElementById('video-player');
+        
+        function toggleFullscreen() {
+            if (video.requestFullscreen) {
+                video.requestFullscreen();
+            } else if (video.webkitRequestFullscreen) {
+                video.webkitRequestFullscreen();
+            } else if (video.msRequestFullscreen) {
+                video.msRequestFullscreen();
+            }
+        }
+        
+        // Video progress tracking
+        video.addEventListener('timeupdate', function() {
+            if (video.duration) {
+                const progress = (video.currentTime / video.duration) * 100;
+                lastPosition = video.currentTime;
+                updateProgress(progress, false);
+            }
+        });
+        
+        video.addEventListener('ended', function() {
+            updateProgress(100, true);
+        });
+        
+        // Load saved position
+        {% if progress and progress.last_position %}
+        video.addEventListener('loadedmetadata', function() {
+            video.currentTime = {{ progress.last_position }};
+        });
+        {% endif %}
+        
+        {% else %}
+        // For non-video resources, track viewing time
+        function trackViewingProgress() {
+            const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+            let progress = Math.min((timeSpent / 300) * 100, 100); // 5 minutes = 100%
+            updateProgress(progress, progress >= 100);
+        }
+        
+        // Track progress every 30 seconds for documents
+        setInterval(trackViewingProgress, 30000);
+        {% endif %}
+        
+        // Function to open PDF/Document in new tab
+        function openInNewTab() {
+            const newTab = window.open('{{ url_for("view_resource", resource_id=resource.id, direct=1) }}', '_blank');
+            newTab.focus();
+            
+            // Track that user opened in new tab
+            {% if resource.resource_type in ['pdf', 'document'] %}
+            updateProgress(25, false); // Give some progress for opening
+            {% endif %}
+        }
+        
+        // Update progress function
+        function updateProgress(progressPercentage, completed) {
+            {% if current_user.role == 'student' %}
+            const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+            
+            fetch('{{ url_for("update_progress", resource_id=resource.id) }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    progress: progressPercentage,
+                    position: lastPosition,
+                    time_spent: timeSpent,
+                    completed: completed
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update UI progress indicator
+                    const progressBar = document.querySelector('.progress-bar');
+                    const progressText = document.querySelector('.progress-circle span');
+                    if (progressBar) progressBar.style.width = progressPercentage + '%';
+                    if (progressText) progressText.textContent = Math.round(progressPercentage) + '%';
+                }
+            })
+            .catch(error => console.error('Error updating progress:', error));
+            {% endif %}
+        }
+        
+        // Track when user leaves page
+        window.addEventListener('beforeunload', function() {
+            {% if resource.resource_type != 'video' %}
+            trackViewingProgress();
+            {% endif %}
+        });
+        
+        // Mobile-specific enhancements
+        if (window.innerWidth <= 768) {
+            // Auto-hide mobile browser UI when viewing videos in fullscreen
+            {% if resource.resource_type == 'video' %}
+            video.addEventListener('fullscreenchange', function() {
+                if (document.fullscreenElement === video) {
+                    document.body.style.overflow = 'hidden';
+                } else {
+                    document.body.style.overflow = 'auto';
+                }
+            });
+            {% endif %}
+        }
+        
+        // Initialize progress tracking for documents
+        {% if resource.resource_type in ['pdf', 'document'] %}
+        setTimeout(function() {
+            updateProgress(10, false); // Initial progress for opening
+        }, 5000);
+        {% endif %}
+    </script>
+</body>
+</html>
