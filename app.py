@@ -584,7 +584,6 @@ def submit_test(test_id):
             'correct_answer': question.correct_answer,
             'is_correct': is_correct
         }
-        
         if question.image_path:
             question_data['image_path'] = question.image_path
             
