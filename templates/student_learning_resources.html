@@ -146,6 +146,33 @@
                         
                         <p class="card-text text-muted small">{{ resource.description[:80] }}{% if resource.description|length > 80 %}...{% endif %}</p>
                         
+                        <!-- File Count and Types for Multiple Files -->
+                        {% if resource.files and resource.files|length > 1 %}
+                        <div class="mb-2">
+                            <div class="d-flex flex-wrap gap-1">
+                                {% set video_count = resource.files|selectattr('file_type', 'equalto', 'video')|list|length %}
+                                {% set pdf_count = resource.files|selectattr('file_type', 'equalto', 'pdf')|list|length %}
+                                {% set doc_count = resource.files|selectattr('file_type', 'equalto', 'document')|list|length %}
+                                
+                                {% if video_count > 0 %}
+                                <span class="badge bg-danger">
+                                    <i class="fas fa-play me-1"></i>{{ video_count }} Video{{ 's' if video_count != 1 else '' }}
+                                </span>
+                                {% endif %}
+                                {% if pdf_count > 0 %}
+                                <span class="badge bg-warning">
+                                    <i class="fas fa-file-pdf me-1"></i>{{ pdf_count }} PDF{{ 's' if pdf_count != 1 else '' }}
+                                </span>
+                                {% endif %}
+                                {% if doc_count > 0 %}
+                                <span class="badge bg-info">
+                                    <i class="fas fa-file-alt me-1"></i>{{ doc_count }} Document{{ 's' if doc_count != 1 else '' }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                        
                         <!-- Progress Info -->
                         {% if progress %}
                         <div class="d-flex justify-content-between align-items-center mt-3">

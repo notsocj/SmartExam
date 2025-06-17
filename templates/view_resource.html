@@ -8,8 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">    <style>
         .resource-viewer {
             min-height: 70vh;
             background: #f8f9fa;
@@ -65,29 +64,9 @@
             cursor: pointer;
             transition: background 0.3s ease;
         }
-        
-        .open-new-tab-btn:hover {
+          .open-new-tab-btn:hover {
             background: #0056b3;
             color: white;
-        }
-        
-        .progress-section {
-            background: linear-gradient(135deg, #28a745, #20c997);
-            border-radius: 16px;
-            padding: 20px;
-            color: white;
-            margin-bottom: 20px;
-        }
-        
-        .progress-circle {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 15px;
         }
         
         .document-wrapper {
@@ -97,6 +76,27 @@
             background: white;
             border-radius: 12px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Split View Styles */
+        #splitViewContainer .resource-viewer {
+            min-height: 50vh;
+        }
+        
+        #splitViewContainer .video-container {
+            height: 300px;
+        }
+        
+        #splitViewContainer .document-container {
+            height: 50vh;
+        }
+        
+        .split-panel-header {
+            background: #0d6efd;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px 6px 0 0;
+            font-weight: 500;
         }
         
         /* Mobile optimizations */
@@ -118,6 +118,14 @@
             .progress-circle {
                 width: 60px;
                 height: 60px;
+            }
+            
+            #splitViewContainer .video-container {
+                height: 200px;
+            }
+            
+            #splitViewContainer .document-container {
+                height: 40vh;
             }
         }
     </style>
@@ -142,11 +150,36 @@
         <div class="row mb-4">
             <div class="col-12">
                 <div class="card shadow-sm">
-                    <div class="card-body">
-                        <div class="row align-items-center">
+                    <div class="card-body">                        <div class="row align-items-center">
                             <div class="col-md-8">
                                 <h1 class="h3 mb-2 text-primary">{{ resource.title }}</h1>
                                 <p class="text-muted mb-0">{{ resource.description }}</p>
+                                {% if resource_files and resource_files|length > 1 %}
+                                <div class="mt-2">
+                                    <span class="badge bg-success me-2">
+                                        <i class="fas fa-folder-open me-1"></i>{{ resource_files|length }} Files in Package
+                                    </span>
+                                    {% set video_files = resource_files|selectattr('file_type', 'equalto', 'video')|list %}
+                                    {% set pdf_files = resource_files|selectattr('file_type', 'equalto', 'pdf')|list %}
+                                    {% set doc_files = resource_files|selectattr('file_type', 'equalto', 'document')|list %}
+                                    
+                                    {% if video_files %}
+                                    <span class="badge bg-danger me-1">
+                                        <i class="fas fa-play me-1"></i>{{ video_files|length }} Video{{ 's' if video_files|length != 1 else '' }}
+                                    </span>
+                                    {% endif %}
+                                    {% if pdf_files %}
+                                    <span class="badge bg-warning me-1">
+                                        <i class="fas fa-file-pdf me-1"></i>{{ pdf_files|length }} PDF{{ 's' if pdf_files|length != 1 else '' }}
+                                    </span>
+                                    {% endif %}
+                                    {% if doc_files %}
+                                    <span class="badge bg-info me-1">
+                                        <i class="fas fa-file-alt me-1"></i>{{ doc_files|length }} Document{{ 's' if doc_files|length != 1 else '' }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                {% endif %}
                             </div>
                             <div class="col-md-4 text-md-end">
                                 <span class="badge bg-primary fs-6 px-3 py-2">{{ resource.resource_type.title() }}</span>
@@ -155,92 +188,193 @@
                     </div>
                 </div>
             </div>
-        </div>
-
-        <div class="row">
-            <!-- Main Content -->
-            <div class="col-lg-8 mb-4">
-                <div class="card shadow-sm">
-                    <div class="card-body p-4">
-                        <div class="resource-viewer">
-                            {% if resource.resource_type == 'video' %}
-                                <!-- Video Player -->
-                                <div class="video-container">
-                                    <button class="fullscreen-btn" onclick="toggleFullscreen()">
-                                        <i class="fas fa-expand me-1"></i>Fullscreen
-                                    </button>
-                                    <video id="video-player" controls style="width: 100%; height: 100%; object-fit: contain;">
-                                        <source src="{{ url_for('resource_file', filename=resource.file_path.split('/')[-1]) }}" type="video/mp4">
-                                        Your browser does not support the video tag.
-                                    </video>
-                                </div>
-                            {% elif resource.resource_type == 'pdf' %}
-                                <!-- PDF Viewer with New Tab Option -->
-                                <div class="document-wrapper">
-                                    <button class="open-new-tab-btn" onclick="openInNewTab()">
-                                        <i class="fas fa-external-link-alt me-1"></i>Open in New Tab
-                                    </button>
-                                    <iframe class="document-container" 
-                                            src="{{ url_for('view_resource', resource_id=resource.id, direct=1) }}#toolbar=1&navpanes=1&scrollbar=1"
-                                            title="{{ resource.title }}">
-                                        <p>Your browser does not support PDFs. 
-                                           <a href="{{ url_for('view_resource', resource_id=resource.id, direct=1) }}" target="_blank">Download the PDF</a>
-                                        </p>
-                                    </iframe>
-                                </div>
-                            {% else %}
-                                <!-- Document Viewer with New Tab Option -->
-                                <div class="document-wrapper">
-                                    <button class="open-new-tab-btn" onclick="openInNewTab()">
-                                        <i class="fas fa-external-link-alt me-1"></i>Open in New Tab
-                                    </button>
-                                    <iframe class="document-container" 
-                                            src="{{ url_for('view_resource', resource_id=resource.id, direct=1) }}"
-                                            title="{{ resource.title }}">
-                                        <p>Your browser does not support this document type. 
-                                           <a href="{{ url_for('view_resource', resource_id=resource.id, direct=1) }}" target="_blank">Download the file</a>
-                                        </p>
-                                    </iframe>
-                                </div>
-                            {% endif %}
+        </div>        <div class="mb-4">
+            <!-- View Mode Controls -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="mb-3"><i class="fas fa-display me-2"></i>View Mode</h5>
+                    <div class="btn-group w-100" role="group">
+                        <button type="button" class="btn btn-outline-primary active" id="singleViewBtn" onclick="switchToSingleView()">
+                            <i class="fas fa-square me-1"></i>Single View
+                        </button>
+                        <button type="button" class="btn btn-outline-primary" id="splitViewBtn" onclick="switchToSplitView()">
+                            <i class="fas fa-columns me-1"></i>Split View
+                        </button>
+                    </div>
+                    
+                    <!-- Split View File Selectors (hidden by default) -->
+                    <div class="row mt-3 d-none" id="splitViewControls">
+                        <div class="col-md-6 mb-2 mb-md-0">
+                            <label class="form-label">Left Panel</label>
+                            <select class="form-select" id="leftPanelSelect" onchange="updateSplitView()">
+                                {% if resource_files %}
+                                    {% for file in resource_files %}
+                                    <option value="{{ file.id }}">{{ file.original_filename }}</option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option value="default">{{ resource.title }}</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Right Panel</label>
+                            <select class="form-select" id="rightPanelSelect" onchange="updateSplitView()">
+                                {% if resource_files %}
+                                    {% for file in resource_files %}
+                                    <option value="{{ file.id }}" {% if loop.index == 1 and resource_files|length > 1 %}selected{% endif %}>{{ file.original_filename }}</option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option value="default">{{ resource.title }}</option>
+                                {% endif %}
+                            </select>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Sidebar -->
-            <div class="col-lg-4">
-                {% if current_user.role == 'student' and progress %}
-                <!-- Progress Section -->
-                <div class="progress-section">
-                    <div class="text-center">
-                        <div class="progress-circle">
-                            <span class="fw-bold fs-4">{{ progress.progress_percentage|round|int }}%</span>
+        </div>
+        
+        <div class="row">
+            <!-- Main Content Container -->
+            <div class="col-12" id="singleViewContainer">
+                {% if resource_files %}
+                    <!-- Multiple Files View -->
+                    {% for file in resource_files %}
+                    <div class="card shadow-sm mb-4 single-file-card" id="file-card-{{ file.id }}">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="fas fa-{{ 'play' if file.file_type == 'video' else 'file-pdf' if file.file_type == 'pdf' else 'file-alt' }} me-2"></i>
+                                {{ file.original_filename }}
+                                <span class="badge bg-light text-dark ms-2">{{ file.file_type.title() }}</span>
+                            </h5>
                         </div>
-                        <h5 class="mb-3">Your Progress</h5>
-                        <div class="progress bg-light bg-opacity-25 mb-3" style="height: 8px;">
-                            <div class="progress-bar bg-light" style="width: {{ progress.progress_percentage }}%"></div>
-                        </div>
-                        <div class="row text-center">
-                            <div class="col-6">
-                                <div class="fw-bold">{{ (progress.time_spent / 60)|round|int }}</div>
-                                <small>Minutes</small>
+                        <div class="card-body p-4">
+                            <div class="resource-viewer">
+                                {% if file.file_type == 'video' %}
+                                    <!-- Video Player -->
+                                    <div class="video-container">
+                                        <button class="fullscreen-btn" onclick="toggleFullscreen('video-{{ file.id }}')">
+                                            <i class="fas fa-expand me-1"></i>Fullscreen
+                                        </button>
+                                        <video id="video-{{ file.id }}" controls style="width: 100%; height: 100%; object-fit: contain;">
+                                            <source src="{{ url_for('resource_file', filename=file.filename) }}" type="video/mp4">
+                                            Your browser does not support the video tag.
+                                        </video>
+                                    </div>
+                                {% elif file.file_type == 'pdf' %}
+                                    <!-- PDF Viewer with New Tab Option -->
+                                    <div class="document-wrapper">
+                                        <button class="open-new-tab-btn" onclick="openFileInNewTab('{{ url_for('resource_file', filename=file.filename) }}')">
+                                            <i class="fas fa-external-link-alt me-1"></i>Open in New Tab
+                                        </button>
+                                        <iframe class="document-container" 
+                                                src="{{ url_for('resource_file', filename=file.filename) }}#toolbar=1&navpanes=1&scrollbar=1"
+                                                title="{{ file.original_filename }}">
+                                            <p>Your browser does not support PDFs. 
+                                               <a href="{{ url_for('resource_file', filename=file.filename) }}" target="_blank">Download the PDF</a>
+                                            </p>
+                                        </iframe>
+                                    </div>
+                                {% else %}
+                                    <!-- Document Viewer with New Tab Option -->
+                                    <div class="document-wrapper">
+                                        <button class="open-new-tab-btn" onclick="openFileInNewTab('{{ url_for('resource_file', filename=file.filename) }}')">
+                                            <i class="fas fa-external-link-alt me-1"></i>Open in New Tab
+                                        </button>
+                                        <iframe class="document-container" 
+                                                src="{{ url_for('resource_file', filename=file.filename) }}"
+                                                title="{{ file.original_filename }}">
+                                            <p>Your browser does not support this document type. 
+                                               <a href="{{ url_for('resource_file', filename=file.filename) }}" target="_blank">Download the file</a>
+                                            </p>
+                                        </iframe>
+                                    </div>
+                                {% endif %}
                             </div>
-                            <div class="col-6">
-                                <div class="fw-bold">
-                                    {% if progress.completed %}
-                                        <i class="fas fa-check-circle"></i> Done
-                                    {% else %}
-                                        <i class="fas fa-clock"></i> Learning
-                                    {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <!-- Fallback to single file view for backward compatibility -->
+                    <div class="card shadow-sm single-file-card" id="file-card-default">
+                        <div class="card-body p-4">
+                            <div class="resource-viewer">
+                                {% if resource.resource_type == 'video' %}
+                                    <!-- Video Player -->
+                                    <div class="video-container">
+                                        <button class="fullscreen-btn" onclick="toggleFullscreen('video-player')">
+                                            <i class="fas fa-expand me-1"></i>Fullscreen
+                                        </button>
+                                        <video id="video-player" controls style="width: 100%; height: 100%; object-fit: contain;">
+                                            <source src="{{ url_for('resource_file', filename=resource.file_path.split('/')[-1]) }}" type="video/mp4">
+                                            Your browser does not support the video tag.
+                                        </video>
+                                    </div>
+                                {% elif resource.resource_type == 'pdf' %}
+                                    <!-- PDF Viewer with New Tab Option -->
+                                    <div class="document-wrapper">
+                                        <button class="open-new-tab-btn" onclick="openInNewTab()">
+                                            <i class="fas fa-external-link-alt me-1"></i>Open in New Tab
+                                        </button>
+                                        <iframe class="document-container" 
+                                                src="{{ url_for('view_resource', resource_id=resource.id, direct=1) }}#toolbar=1&navpanes=1&scrollbar=1"
+                                                title="{{ resource.title }}">
+                                            <p>Your browser does not support PDFs. 
+                                               <a href="{{ url_for('view_resource', resource_id=resource.id, direct=1) }}" target="_blank">Download the PDF</a>
+                                            </p>
+                                        </iframe>
+                                    </div>
+                                {% else %}
+                                    <!-- Document Viewer with New Tab Option -->
+                                    <div class="document-wrapper">
+                                        <button class="open-new-tab-btn" onclick="openInNewTab()">
+                                            <i class="fas fa-external-link-alt me-1"></i>Open in New Tab
+                                        </button>
+                                        <iframe class="document-container" 
+                                                src="{{ url_for('view_resource', resource_id=resource.id, direct=1) }}"
+                                                title="{{ resource.title }}">
+                                            <p>Your browser does not support this document type. 
+                                               <a href="{{ url_for('view_resource', resource_id=resource.id, direct=1) }}" target="_blank">Download the file</a>
+                                            </p>
+                                        </iframe>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Split View Container (hidden by default) -->
+            <div class="col-12 d-none" id="splitViewContainer">
+                <div class="card shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="row">
+                            <!-- Left Panel -->
+                            <div class="col-md-6 mb-4 mb-md-0" id="leftPanelContainer">
+                                <div class="split-panel-header mb-2 bg-primary text-white p-2 rounded">
+                                    <h6 class="mb-0" id="leftPanelTitle"></h6>
                                 </div>
-                                <small>Status</small>
+                                <div class="resource-viewer" id="leftPanelContent">
+                                    <!-- Content will be dynamically inserted here -->
+                                </div>
+                            </div>
+                            
+                            <!-- Right Panel -->
+                            <div class="col-md-6" id="rightPanelContainer">
+                                <div class="split-panel-header mb-2 bg-primary text-white p-2 rounded">
+                                    <h6 class="mb-0" id="rightPanelTitle"></h6>
+                                </div>
+                                <div class="resource-viewer" id="rightPanelContent">
+                                    <!-- Content will be dynamically inserted here -->
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                {% endif %}
-
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="col-lg-4">
                 <!-- Linked Tests -->
                 {% if resource.linked_tests %}
                 <div class="card shadow-sm mb-4" style="background: linear-gradient(135deg, #007bff, #0056b3); color: white;">
@@ -298,60 +432,35 @@
     </div>
 
     <!-- Bootstrap JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>      <script>
         // Progress tracking variables
         let startTime = Date.now();
         let lastPosition = 0;
         
-        // Video player functionality
-        {% if resource.resource_type == 'video' %}
-        const video = document.getElementById('video-player');
-        
-        function toggleFullscreen() {
-            if (video.requestFullscreen) {
-                video.requestFullscreen();
-            } else if (video.webkitRequestFullscreen) {
-                video.webkitRequestFullscreen();
-            } else if (video.msRequestFullscreen) {
-                video.msRequestFullscreen();
+        // Function to toggle fullscreen for specific video
+        function toggleFullscreen(videoId) {
+            const video = document.getElementById(videoId);
+            if (video) {
+                if (video.requestFullscreen) {
+                    video.requestFullscreen();
+                } else if (video.webkitRequestFullscreen) {
+                    video.webkitRequestFullscreen();
+                } else if (video.msRequestFullscreen) {
+                    video.msRequestFullscreen();
+                }
             }
         }
         
-        // Video progress tracking
-        video.addEventListener('timeupdate', function() {
-            if (video.duration) {
-                const progress = (video.currentTime / video.duration) * 100;
-                lastPosition = video.currentTime;
-                updateProgress(progress, false);
-            }
-        });
-        
-        video.addEventListener('ended', function() {
-            updateProgress(100, true);
-        });
-        
-        // Load saved position
-        {% if progress and progress.last_position %}
-        video.addEventListener('loadedmetadata', function() {
-            video.currentTime = {{ progress.last_position }};
-        });
-        {% endif %}
-        
-        {% else %}
-        // For non-video resources, track viewing time
-        function trackViewingProgress() {
-            const timeSpent = Math.floor((Date.now() - startTime) / 1000);
-            let progress = Math.min((timeSpent / 300) * 100, 100); // 5 minutes = 100%
-            updateProgress(progress, progress >= 100);
+        // Function to open file in new tab
+        function openFileInNewTab(fileUrl) {
+            const newTab = window.open(fileUrl, '_blank');
+            newTab.focus();
+            
+            // Track that user opened in new tab
+            updateProgress(25, false);
         }
         
-        // Track progress every 30 seconds for documents
-        setInterval(trackViewingProgress, 30000);
-        {% endif %}
-        
-        // Function to open PDF/Document in new tab
+        // Function to open PDF/Document in new tab (backward compatibility)
         function openInNewTab() {
             const newTab = window.open('{{ url_for("view_resource", resource_id=resource.id, direct=1) }}', '_blank');
             newTab.focus();
@@ -361,6 +470,263 @@
             updateProgress(25, false); // Give some progress for opening
             {% endif %}
         }
+        
+        // Split View functionality
+        function switchToSingleView() {
+            document.getElementById('singleViewBtn').classList.add('active');
+            document.getElementById('splitViewBtn').classList.remove('active');
+            document.getElementById('splitViewControls').classList.add('d-none');
+            document.getElementById('singleViewContainer').classList.remove('d-none');
+            document.getElementById('splitViewContainer').classList.add('d-none');
+            
+            // Resume proper layout
+            document.getElementById('singleViewContainer').classList.add('col-12');
+            
+            // Restore all single view cards
+            document.querySelectorAll('.single-file-card').forEach(card => {
+                card.classList.remove('d-none');
+            });
+        }
+        
+        function switchToSplitView() {
+            document.getElementById('singleViewBtn').classList.remove('active');
+            document.getElementById('splitViewBtn').classList.add('active');
+            document.getElementById('splitViewControls').classList.remove('d-none');
+            document.getElementById('singleViewContainer').classList.add('d-none');
+            document.getElementById('splitViewContainer').classList.remove('d-none');
+            
+            // Update split view content
+            updateSplitView();
+        }
+        
+        function updateSplitView() {
+            const leftPanelId = document.getElementById('leftPanelSelect').value;
+            const rightPanelId = document.getElementById('rightPanelSelect').value;
+            
+            // Avoid showing the same content in both panels
+            if (leftPanelId === rightPanelId && leftPanelId !== 'default') {
+                // If there are more than one file, select the next one
+                const options = document.getElementById('rightPanelSelect').options;
+                if (options.length > 1) {
+                    for (let i = 0; i < options.length; i++) {
+                        if (options[i].value !== leftPanelId) {
+                            document.getElementById('rightPanelSelect').value = options[i].value;
+                            rightPanelId = options[i].value;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // Update left panel
+            updatePanel('left', leftPanelId);
+            
+            // Update right panel
+            updatePanel('right', rightPanelId);
+        }
+        
+        function updatePanel(side, fileId) {
+            const panelContent = document.getElementById(`${side}PanelContent`);
+            const panelTitle = document.getElementById(`${side}PanelTitle`);
+            
+            if (!panelContent) return;
+            
+            {% if resource_files %}
+            // Get file information
+            let fileInfo = null;
+            {% for file in resource_files %}
+            if (fileId === '{{ file.id }}') {
+                fileInfo = {
+                    id: '{{ file.id }}',
+                    filename: '{{ file.filename }}',
+                    originalFilename: '{{ file.original_filename }}',
+                    fileType: '{{ file.file_type }}',
+                    url: '{{ url_for("resource_file", filename=file.filename) }}'
+                };
+            }
+            {% endfor %}
+            
+            if (fileInfo) {
+                // Set panel title
+                panelTitle.innerHTML = `<i class="fas fa-${fileInfo.fileType === 'video' ? 'play' : fileInfo.fileType === 'pdf' ? 'file-pdf' : 'file-alt'} me-2"></i>${fileInfo.originalFilename}`;
+                
+                // Create content based on file type
+                let content = '';
+                if (fileInfo.fileType === 'video') {
+                    content = `
+                        <div class="video-container">
+                            <button class="fullscreen-btn" onclick="toggleFullscreen('split-video-${fileInfo.id}')">
+                                <i class="fas fa-expand me-1"></i>Fullscreen
+                            </button>
+                            <video id="split-video-${fileInfo.id}" controls style="width: 100%; height: 100%; object-fit: contain;">
+                                <source src="${fileInfo.url}" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
+                    `;
+                } else if (fileInfo.fileType === 'pdf') {
+                    content = `
+                        <div class="document-wrapper">
+                            <button class="open-new-tab-btn" onclick="openFileInNewTab('${fileInfo.url}')">
+                                <i class="fas fa-external-link-alt me-1"></i>Open in New Tab
+                            </button>
+                            <iframe class="document-container" 
+                                    src="${fileInfo.url}#toolbar=1&navpanes=1&scrollbar=1"
+                                    title="${fileInfo.originalFilename}">
+                                <p>Your browser does not support PDFs.</p>
+                            </iframe>
+                        </div>
+                    `;
+                } else {
+                    content = `
+                        <div class="document-wrapper">
+                            <button class="open-new-tab-btn" onclick="openFileInNewTab('${fileInfo.url}')">
+                                <i class="fas fa-external-link-alt me-1"></i>Open in New Tab
+                            </button>
+                            <iframe class="document-container" 
+                                    src="${fileInfo.url}"
+                                    title="${fileInfo.originalFilename}">
+                                <p>Your browser does not support this document type.</p>
+                            </iframe>
+                        </div>
+                    `;
+                }
+                
+                panelContent.innerHTML = content;
+                
+                // Initialize video events for split view
+                if (fileInfo.fileType === 'video') {
+                    const video = document.getElementById(`split-video-${fileInfo.id}`);
+                    if (video) {
+                        video.addEventListener('timeupdate', function() {
+                            if (this.duration) {
+                                const progress = (this.currentTime / this.duration) * 100;
+                                lastPosition = this.currentTime;
+                                updateProgress(progress, false);
+                            }
+                        });
+                        
+                        video.addEventListener('ended', function() {
+                            updateProgress(100, true);
+                        });
+                    }
+                }
+            } else {
+                // Fallback content for older resources
+                {% if not resource_files %}
+                panelTitle.innerHTML = '{{ resource.title }}';
+                
+                {% if resource.resource_type == 'video' %}
+                panelContent.innerHTML = `
+                    <div class="video-container">
+                        <button class="fullscreen-btn" onclick="toggleFullscreen('split-video-default')">
+                            <i class="fas fa-expand me-1"></i>Fullscreen
+                        </button>
+                        <video id="split-video-default" controls style="width: 100%; height: 100%; object-fit: contain;">
+                            <source src="{{ url_for('resource_file', filename=resource.file_path.split('/')[-1]) }}" type="video/mp4">
+                            Your browser does not support the video tag.
+                        </video>
+                    </div>
+                `;
+                {% elif resource.resource_type == 'pdf' %}
+                panelContent.innerHTML = `
+                    <div class="document-wrapper">
+                        <button class="open-new-tab-btn" onclick="openInNewTab()">
+                            <i class="fas fa-external-link-alt me-1"></i>Open in New Tab
+                        </button>
+                        <iframe class="document-container" 
+                                src="{{ url_for('view_resource', resource_id=resource.id, direct=1) }}#toolbar=1&navpanes=1&scrollbar=1"
+                                title="{{ resource.title }}">
+                            <p>Your browser does not support PDFs.</p>
+                        </iframe>
+                    </div>
+                `;
+                {% else %}
+                panelContent.innerHTML = `
+                    <div class="document-wrapper">
+                        <button class="open-new-tab-btn" onclick="openInNewTab()">
+                            <i class="fas fa-external-link-alt me-1"></i>Open in New Tab
+                        </button>
+                        <iframe class="document-container" 
+                                src="{{ url_for('view_resource', resource_id=resource.id, direct=1) }}"
+                                title="{{ resource.title }}">
+                            <p>Your browser does not support this document type.</p>
+                        </iframe>
+                    </div>
+                `;
+                {% endif %}
+                {% endif %}
+            }
+            {% endif %}
+        }
+        
+        // Video player functionality for multiple videos
+        {% if resource_files %}
+        {% for file in resource_files %}
+        {% if file.file_type == 'video' %}
+        const video_{{ file.id }} = document.getElementById('video-{{ file.id }}');
+        if (video_{{ file.id }}) {
+            // Video progress tracking
+            video_{{ file.id }}.addEventListener('timeupdate', function() {
+                if (this.duration) {
+                    const progress = (this.currentTime / this.duration) * 100;
+                    lastPosition = this.currentTime;
+                    updateProgress(progress, false);
+                }
+            });
+            
+            video_{{ file.id }}.addEventListener('ended', function() {
+                updateProgress(100, true);
+            });
+            
+            // Load saved position
+            {% if progress and progress.last_position %}
+            video_{{ file.id }}.addEventListener('loadedmetadata', function() {
+                this.currentTime = {{ progress.last_position }};
+            });
+            {% endif %}
+        }
+        {% endif %}
+        {% endfor %}
+        {% endif %}
+        
+        // Fallback for single video (backward compatibility)
+        {% if resource.resource_type == 'video' and not resource_files %}
+        const video = document.getElementById('video-player');
+        if (video) {
+            // Video progress tracking
+            video.addEventListener('timeupdate', function() {
+                if (video.duration) {
+                    const progress = (video.currentTime / video.duration) * 100;
+                    lastPosition = video.currentTime;
+                    updateProgress(progress, false);
+                }
+            });
+            
+            video.addEventListener('ended', function() {
+                updateProgress(100, true);
+            });
+            
+            // Load saved position
+            {% if progress and progress.last_position %}
+            video.addEventListener('loadedmetadata', function() {
+                video.currentTime = {{ progress.last_position }};
+            });
+            {% endif %}
+        }
+        {% endif %}
+        
+        // For non-video resources, track viewing time
+        {% if resource.resource_type != 'video' or not resource_files or resource_files|selectattr('file_type', 'equalto', 'video')|list|length == 0 %}
+        function trackViewingProgress() {
+            const timeSpent = Math.floor((Date.now() - startTime) / 1000);
+            let progress = Math.min((timeSpent / 300) * 100, 100); // 5 minutes = 100%
+            updateProgress(progress, progress >= 100);
+        }
+        
+        // Track progress every 30 seconds for documents
+        setInterval(trackViewingProgress, 30000);
+        {% endif %}
         
         // Update progress function
         function updateProgress(progressPercentage, completed) {
@@ -382,11 +748,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Update UI progress indicator
-                    const progressBar = document.querySelector('.progress-bar');
-                    const progressText = document.querySelector('.progress-circle span');
-                    if (progressBar) progressBar.style.width = progressPercentage + '%';
-                    if (progressText) progressText.textContent = Math.round(progressPercentage) + '%';
+                    console.log('Progress updated successfully');
                 }
             })
             .catch(error => console.error('Error updating progress:', error));
@@ -403,19 +765,26 @@
         // Mobile-specific enhancements
         if (window.innerWidth <= 768) {
             // Auto-hide mobile browser UI when viewing videos in fullscreen
-            {% if resource.resource_type == 'video' %}
-            video.addEventListener('fullscreenchange', function() {
-                if (document.fullscreenElement === video) {
-                    document.body.style.overflow = 'hidden';
-                } else {
-                    document.body.style.overflow = 'auto';
-                }
-            });
+            {% if resource_files %}
+            {% for file in resource_files %}
+            {% if file.file_type == 'video' %}
+            const video_{{ file.id }}_mobile = document.getElementById('video-{{ file.id }}');
+            if (video_{{ file.id }}_mobile) {
+                video_{{ file.id }}_mobile.addEventListener('fullscreenchange', function() {
+                    if (document.fullscreenElement === this) {
+                        document.body.style.overflow = 'hidden';
+                    } else {
+                        document.body.style.overflow = 'auto';
+                    }
+                });
+            }
+            {% endif %}
+            {% endfor %}
             {% endif %}
         }
         
         // Initialize progress tracking for documents
-        {% if resource.resource_type in ['pdf', 'document'] %}
+        {% if resource.resource_type in ['pdf', 'document'] or (resource_files and resource_files|selectattr('file_type', 'in', ['pdf', 'document'])|list|length > 0) %}
         setTimeout(function() {
             updateProgress(10, false); // Initial progress for opening
         }, 5000);

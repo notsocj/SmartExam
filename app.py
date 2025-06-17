@@ -2,7 +2,7 @@ from flask import Flask, render_template, redirect, url_for, flash, request, jso
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_migrate import Migrate
 from functools import wraps
-from models import db, User, Result, Question, Test, LearningResource, StudentProgress
+from models import db, User, Result, Question, Test, LearningResource, StudentProgress, ResourceFile
 from config import config
 from datetime import datetime
 from werkzeug.utils import secure_filename
@@ -316,6 +316,16 @@ def allowed_file(filename):
 def allowed_learning_file(filename):
     ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def get_file_type(filename):
+    """Determine file type based on extension"""
+    ext = filename.rsplit('.', 1)[1].lower()
+    if ext in ['mp4', 'avi', 'mov', 'wmv', 'flv', 'webm']:
+        return 'video'
+    elif ext == 'pdf':
+        return 'pdf'
+    else:
+        return 'document'
 
 def get_file_size(file_path):
     try:
@@ -710,58 +720,92 @@ def upload_learning_resource():
         title = request.form.get('title')
         description = request.form.get('description', '')
         
-        if 'resource_file' not in request.files:
-            flash('No file selected')
+        if not title:
+            flash('Title is required', 'error')
             return redirect(url_for('learning_resources'))
         
-        file = request.files['resource_file']
-        if file.filename == '':
-            flash('No file selected')
+        # Get multiple files
+        uploaded_files = request.files.getlist('resource_files')
+        
+        if not uploaded_files or all(file.filename == '' for file in uploaded_files):
+            flash('At least one file is required', 'error')
             return redirect(url_for('learning_resources'))
         
-        if file and allowed_learning_file(file.filename):
-            filename = secure_filename(file.filename)
-            
-            # Create unique filename to avoid conflicts
-            timestamp = str(int(datetime.now().timestamp()))
-            name, ext = os.path.splitext(filename)
-            unique_filename = f"{name}_{timestamp}{ext}"
-            
-            file_path = os.path.join(app.config['LEARNING_RESOURCES_FOLDER'], unique_filename)
-            file.save(file_path)
-            
-            # Determine resource type based on file extension
-            file_ext = ext.lower()
-            if file_ext in ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm']:
-                resource_type = 'video'
-            elif file_ext == '.pdf':
-                resource_type = 'pdf'
-            else:
-                resource_type = 'document'
-            
-            # Get file size
-            file_size = get_file_size(file_path)
-            
-            # Create learning resource record
-            resource = LearningResource(
-                title=title,
-                description=description,
-                resource_type=resource_type,
-                file_path=f'learning_resources/{unique_filename}',
-                file_size=file_size,
-                created_by=current_user.id
-            )
-            
-            db.session.add(resource)
-            db.session.commit()
-            
-            flash('Learning resource uploaded successfully!')
+        # Validate all files
+        valid_files = []
+        for file in uploaded_files:
+            if file.filename and allowed_learning_file(file.filename):
+                valid_files.append(file)
+        
+        if not valid_files:
+            flash('No valid files found. Please upload MP4, PDF, DOC, or TXT files.', 'error')
+            return redirect(url_for('learning_resources'))
+        
+        # Determine resource type based on uploaded files
+        file_types = [get_file_type(file.filename) for file in valid_files]
+        if len(set(file_types)) > 1:
+            resource_type = 'mixed'
         else:
-            flash('Invalid file type. Please upload a supported format.')
-    
+            resource_type = file_types[0]
+        
+        # Create the learning resource
+        resource = LearningResource(
+            title=title,
+            description=description,
+            resource_type=resource_type,
+            created_by=current_user.id,
+            file_size=0  # Will be calculated from all files
+        )
+        
+        db.session.add(resource)
+        db.session.flush()  # Get the ID
+        
+        total_size = 0
+        
+        # Save each file
+        for index, file in enumerate(valid_files):
+            if file and file.filename:
+                filename = secure_filename(file.filename)
+                unique_filename = f"{resource.id}_{index}_{filename}"
+                file_path = os.path.join(app.config['LEARNING_RESOURCES_FOLDER'], unique_filename)
+                
+                # Save file
+                file.save(file_path)
+                
+                # Get file info
+                file_size = get_file_size(file_path)
+                file_type = get_file_type(filename)
+                total_size += file_size
+                
+                # Create ResourceFile record
+                resource_file = ResourceFile(
+                    resource_id=resource.id,
+                    filename=unique_filename,
+                    original_filename=filename,
+                    file_path=f"learning_resources/{unique_filename}",
+                    file_type=file_type,
+                    file_size=file_size,
+                    upload_order=index,
+                    mime_type=file.content_type or 'application/octet-stream'
+                )
+                
+                db.session.add(resource_file)
+        
+        # Update resource with total size
+        resource.file_size = total_size
+        
+        # Set primary file path for backward compatibility (first file)
+        if valid_files:
+            first_file = valid_files[0]
+            first_filename = secure_filename(first_file.filename)
+            resource.file_path = f"learning_resources/{resource.id}_0_{first_filename}"
+        
+        db.session.commit()
+        flash('Learning resource uploaded successfully!', 'success')
+        
     except Exception as e:
-        flash(f'Error uploading file: {str(e)}')
         db.session.rollback()
+        flash(f'Error uploading resource: {str(e)}', 'error')
     
     return redirect(url_for('learning_resources'))
 
@@ -825,29 +869,54 @@ def view_resource(resource_id):
     progress = None
     if current_user.role == 'student':
         progress = StudentProgress.query.filter_by(
-            user_id=current_user.id,
+            user_id=current_user.id, 
             resource_id=resource_id
         ).first()
         
         if not progress:
             progress = StudentProgress(
                 user_id=current_user.id,
-                resource_id=resource_id
+                resource_id=resource_id,
+                progress_percentage=0.0
             )
             db.session.add(progress)
             db.session.commit()
-        else:
-            # Update last accessed time
-            progress.last_accessed = datetime.utcnow()
-            db.session.commit()
     
     # For PDF and non-video resources, check if it's a direct file access request
-    if resource.resource_type in ['pdf', 'document'] and request.args.get('direct') == '1':
-        # Serve the file directly for new tab opening
-        return send_from_directory(app.config['LEARNING_RESOURCES_FOLDER'], 
-                                 os.path.basename(resource.file_path))
+    if request.args.get('direct') == '1':
+        # If there are multiple files, serve the first PDF or document
+        if resource.files:
+            target_file = None
+            # Look for PDF first, then any document
+            for file in resource.files:
+                if file.file_type == 'pdf':
+                    target_file = file
+                    break
+            if not target_file:
+                for file in resource.files:
+                    if file.file_type == 'document':
+                        target_file = file
+                        break
+            if not target_file:
+                target_file = resource.files[0]
+            
+            return send_from_directory(
+                app.config['LEARNING_RESOURCES_FOLDER'], 
+                target_file.filename
+            )
+        else:
+            # Fallback to old single file system
+            if resource.file_path:
+                filename = resource.file_path.split('/')[-1]
+                return send_from_directory(app.config['LEARNING_RESOURCES_FOLDER'], filename)
     
-    return render_template('view_resource.html', resource=resource, progress=progress)
+    # Get all files for the resource, ordered by upload_order
+    resource_files = ResourceFile.query.filter_by(resource_id=resource_id).order_by(ResourceFile.upload_order).all()
+    
+    return render_template('view_resource.html', 
+                         resource=resource, 
+                         progress=progress, 
+                         resource_files=resource_files)
 
 @app.route('/update_progress/<int:resource_id>', methods=['POST'])
 @login_required
@@ -875,7 +944,7 @@ def update_progress(resource_id):
         progress.completed = data.get('completed', False)
         progress.last_accessed = datetime.utcnow()
         
-        db.session.commit()
+        db.session.commit();
         
         return jsonify({'success': True})
     

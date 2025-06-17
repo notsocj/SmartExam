@@ -62,10 +62,10 @@ class LearningResource(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text)
-    resource_type = db.Column(db.String(20), nullable=False)  # 'video', 'document', 'pdf'
-    file_path = db.Column(db.String(500), nullable=False)
+    resource_type = db.Column(db.String(20), nullable=False)  # 'mixed', 'video', 'document', 'pdf'
+    file_path = db.Column(db.String(500), nullable=True)  # Primary file path (for backward compatibility)
     thumbnail_path = db.Column(db.String(500))  # For video thumbnails
-    file_size = db.Column(db.BigInteger)  # File size in bytes
+    file_size = db.Column(db.BigInteger)  # Total file size in bytes
     duration = db.Column(db.Integer)  # Duration in seconds for videos
     created_by = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -75,8 +75,27 @@ class LearningResource(db.Model):
     # Relationship to tests (one resource can have multiple linked tests)
     linked_tests = db.relationship('Test', backref='learning_resource', lazy=True)
     
+    # Relationship to multiple files
+    files = db.relationship('ResourceFile', backref='resource', lazy=True, cascade='all, delete-orphan')
+    
     def __repr__(self):
         return f'<LearningResource {self.title}>'
+
+class ResourceFile(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    resource_id = db.Column(db.Integer, db.ForeignKey('learning_resource.id', ondelete='CASCADE'), nullable=False)
+    filename = db.Column(db.String(255), nullable=False)
+    original_filename = db.Column(db.String(255), nullable=False)
+    file_path = db.Column(db.String(500), nullable=False)
+    file_type = db.Column(db.String(50), nullable=False)  # 'video', 'pdf', 'document'
+    file_size = db.Column(db.BigInteger)  # File size in bytes
+    mime_type = db.Column(db.String(100))
+    duration = db.Column(db.Integer)  # Duration in seconds for videos
+    upload_order = db.Column(db.Integer, default=0)  # Order of files in the resource
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f'<ResourceFile {self.filename}>'
 
 class StudentProgress(db.Model):
     id = db.Column(db.Integer, primary_key=True)

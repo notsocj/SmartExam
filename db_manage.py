@@ -2,6 +2,7 @@ import os
 import click
 from flask.cli import FlaskGroup
 from app import app, db, User
+from models import LearningResource, ResourceFile
 
 cli = FlaskGroup(app)
 
@@ -18,6 +19,48 @@ def init_db_command():
     db.session.commit()
     
     click.echo('Initialized the database and created admin user (username: admin, password: admin)')
+
+@cli.command('update-db')
+def update_db_command():
+    """Update database schema without losing data."""
+    try:
+        # Create new tables if they don't exist
+        db.create_all()
+        click.echo('Database schema updated successfully')
+    except Exception as e:
+        click.echo(f'Error updating database: {str(e)}')
+
+@cli.command('migrate-resources')
+def migrate_resources_command():
+    """Migrate existing learning resources to new structure."""
+    try:
+        resources = LearningResource.query.all()
+        for resource in resources:
+            # Check if resource already has files
+            if not resource.files and resource.file_path:
+                # Create ResourceFile entry from existing file_path
+                filename = resource.file_path.split('/')[-1]
+                file_type = 'video' if resource.resource_type == 'video' else ('pdf' if resource.resource_type == 'pdf' else 'document')
+                
+                resource_file = ResourceFile(
+                    resource_id=resource.id,
+                    filename=filename,
+                    original_filename=filename,
+                    file_path=resource.file_path,
+                    file_type=file_type,
+                    file_size=resource.file_size or 0,
+                    upload_order=0,
+                    mime_type='application/octet-stream'
+                )
+                
+                db.session.add(resource_file)
+        
+        db.session.commit()
+        click.echo('Successfully migrated existing resources')
+        
+    except Exception as e:
+        db.session.rollback()
+        click.echo(f'Error migrating resources: {str(e)}')
 
 @cli.command('create-user')
 @click.option('--name', prompt=True, help='User\'s full name')
