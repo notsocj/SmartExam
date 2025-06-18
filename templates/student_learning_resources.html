@@ -187,114 +187,19 @@
                 font-size: 0.7rem;
                 padding: 0.3rem 0.6rem;
             }
-        }
-        
-        /* Mobile portrait */
+        }        /* Mobile portrait */
         @media (max-width: 575px) {
-            .container-fluid {
-                padding-left: 1rem;
-                padding-right: 1rem;
-                padding-top: 1rem;
-                padding-bottom: 1rem;
-            }
-            
-            .resource-card {
-                border-radius: 10px;
-                margin-bottom: 1.25rem;
-            }
-            
-            .resource-thumbnail {
-                height: 140px;
-                font-size: 2rem;
-                border-radius: 10px 10px 0 0;
-            }
-            
-            .resource-card .card-body {
-                padding: 0.875rem;
-            }
-            
-            .test-badge {
-                top: 5px;
-                right: 5px;
-                padding: 2px 5px;
-                font-size: 0.65rem;
-                border-radius: 10px;
-            }
-            
-            .header-stats {
-                flex-direction: row;
-                justify-content: center;
-                gap: 1.5rem;
-                margin-top: 1rem;
-            }
-            
-            .stat-item {
-                min-width: 60px;
-            }
-            
-            .stat-item .fw-bold {
-                font-size: 1.25rem;
-            }
-            
-            .stat-item small {
-                font-size: 0.8rem;
-            }
-            
-            .card-title {
-                font-size: 1rem;
-                line-height: 1.3;
-                margin-bottom: 0.5rem;
-            }
-            
-            .card-text {
-                font-size: 0.85rem;
-                line-height: 1.4;
-                margin-bottom: 0.75rem;
-            }
-            
-            .badge {
-                font-size: 0.65rem;
-                padding: 0.25rem 0.5rem;
-                margin-bottom: 0.25rem;
-            }
-            
-            .progress-custom {
-                height: 5px;
-            }
-            
-            .d-flex.justify-content-between.text-muted.small {
-                font-size: 0.75rem;
-            }
-            
-            /* Header responsive */
-            .h3 {
-                font-size: 1.3rem;
-            }
-            
-            .text-muted {
-                font-size: 0.85rem;
-            }
-            
-            /* Stack header content on very small screens */
-            .row.align-items-center > .col-md-8,
-            .row.align-items-center > .col-md-4 {
-                text-align: center;
-            }
-            
-            .row.align-items-center > .col-md-4 {
-                margin-top: 1rem;
-            }
-        }
-          /* Very small screens */
-        @media (max-width: 375px) {
             .container-fluid {
                 padding-left: 0.75rem;
                 padding-right: 0.75rem;
+                padding-top: 0.75rem;
+                padding-bottom: 0.75rem;
             }
             
             .resource-card {
                 border-radius: 8px;
                 margin-bottom: 1rem;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
             }
             
             .resource-thumbnail {
@@ -304,25 +209,190 @@
             }
             
             .resource-card .card-body {
-                padding: 0.75rem;
+                padding: 1rem;
+                text-align: center;
+            }
+            
+            .test-badge {
+                top: 4px;
+                right: 4px;
+                padding: 2px 4px;
+                font-size: 0.6rem;
+                border-radius: 8px;
+            }
+            
+            .header-stats {
+                flex-direction: row;
+                justify-content: center;
+                gap: 2rem;
+                margin-top: 0.75rem;
+            }
+            
+            .stat-item {
+                min-width: 55px;
+                text-align: center;
+            }
+            
+            .stat-item .fw-bold {
+                font-size: 1.2rem;
+            }
+            
+            .stat-item small {
+                font-size: 0.75rem;
             }
             
             .card-title {
                 font-size: 0.95rem;
+                line-height: 1.25;
+                margin-bottom: 0.5rem;
+                text-align: center;
             }
             
             .card-text {
-                font-size: 0.8rem;
+                font-size: 0.85rem;
+                line-height: 1.4;
+                margin-bottom: 0.75rem;
+                text-align: center;
             }
             
             .badge {
-                font-size: 0.6rem;
-                padding: 0.2rem 0.4rem;
+                font-size: 0.65rem;
+                padding: 0.25rem 0.5rem;
+                margin-bottom: 0.25rem;
+                margin-right: 0.25rem;
+            }
+            
+            .progress-custom {
+                height: 4px;
+            }
+            
+            .d-flex.justify-content-between.text-muted.small {
+                font-size: 0.75rem;
+                justify-content: center !important;
+                flex-direction: column;
+                text-align: center;
+                gap: 0.25rem;
+            }
+            
+            /* Header responsive */
+            .h3 {
+                font-size: 1.25rem;
+                text-align: center;
+            }
+            
+            .text-muted {
+                font-size: 0.85rem;
+                text-align: center;
+            }
+            
+            /* Stack header content on very small screens */
+            .row.align-items-center > .col-md-8,
+            .row.align-items-center > .col-md-4 {
+                text-align: center !important;
+            }
+            
+            .row.align-items-center > .col-md-4 {
+                margin-top: 0.75rem;
+            }
+            
+            /* Card header adjustments */
+            .card-body.py-3 {
+                padding-top: 1rem !important;
+                padding-bottom: 1rem !important;
+                text-align: center !important;
+            }
+            
+            /* Navigation improvements */
+            .navbar {
+                padding-top: 0.5rem;
+                padding-bottom: 0.5rem;
+            }
+            
+            .navbar-brand {
+                font-size: 1.1rem;
+            }
+            
+            /* Button spacing */
+            .badge.bg-primary.text-white {
+                padding: 0.5rem 1rem;
+                font-size: 0.8rem;
+                margin-top: 0.5rem;
+                display: inline-block;
+            }
+            
+            /* Center all file type badges */
+            .mb-3 .d-flex {
+                justify-content: center !important;
+                flex-wrap: wrap;
+                gap: 0.25rem;
+            }
+            
+            /* Center progress info */
+            .mb-3 small {
+                text-align: center !important;
+                display: block !important;
+            }
+            
+            /* Center card content */
+            .d-flex.justify-content-between {
+                justify-content: center !important;
+                flex-direction: column;
+                text-align: center;
+                gap: 0.25rem;
+            }
+            
+            /* Force center alignment for all card elements */
+            .card-body > * {
+                text-align: center !important;
+            }
+            
+            .card-body .d-flex {
+                justify-content: center !important;
+                flex-direction: column;
+                align-items: center;
+            }
+        }/* Very small screens */
+        @media (max-width: 375px) {
+            .container-fluid {
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
+            
+            .resource-card {
+                border-radius: 6px;
+                margin-bottom: 0.75rem;
+            }
+            
+            .resource-thumbnail {
+                height: 100px;
+                font-size: 1.5rem;
+                border-radius: 6px 6px 0 0;
+            }
+            
+            .resource-card .card-body {
+                padding: 0.5rem;
+            }
+            
+            .card-title {
+                font-size: 0.85rem;
+                margin-bottom: 0.3rem;
+            }
+            
+            .card-text {
+                font-size: 0.75rem;
+                margin-bottom: 0.5rem;
+            }
+            
+            .badge {
+                font-size: 0.55rem;
+                padding: 0.15rem 0.3rem;
+                margin-bottom: 0.15rem;
+                margin-right: 0.15rem;
             }
             
             .test-badge {
-                font-size: 0.6rem;
-                padding: 2px 4px;
+                font-size: 0.55rem;
+                padding: 1px 3px;
             }
             
             .header-stats {
@@ -330,15 +400,24 @@
             }
             
             .stat-item {
-                min-width: 50px;
+                min-width: 45px;
             }
             
             .stat-item .fw-bold {
-                font-size: 1.1rem;
+                font-size: 1rem;
             }
             
             .stat-item small {
-                font-size: 0.75rem;
+                font-size: 0.7rem;
+            }
+            
+            .h3 {
+                font-size: 1.1rem;
+            }
+            
+            .badge.bg-primary.text-white {
+                padding: 0.3rem 0.6rem;
+                font-size: 0.7rem;
             }
         }
         
@@ -379,16 +458,15 @@
                 font-size: 0.7rem;
             }
         }
-        
-        /* Landscape orientation adjustments for mobile */
+          /* Landscape orientation adjustments for mobile */
         @media (max-width: 767px) and (orientation: landscape) {
             .resource-thumbnail {
-                height: 120px;
+                height: 100px;
             }
             
             .container-fluid {
-                padding-top: 0.75rem;
-                padding-bottom: 0.75rem;
+                padding-top: 0.5rem;
+                padding-bottom: 0.5rem;
             }
             
             .navbar {
@@ -561,8 +639,7 @@
             outline: 2px solid #007bff;
             outline-offset: 2px;
         }
-        
-        /* Improved text scaling */
+          /* Improved text scaling */
         @media (max-width: 575px) {
             .card-text {
                 font-size: 0.85rem;
@@ -592,6 +669,73 @@
             h5, .h5 {
                 font-size: 1rem;
             }
+            
+            /* Additional mobile centering fixes */
+            .card-body {
+                text-align: center !important;
+            }
+            
+            .card-body .d-flex {
+                justify-content: center !important;
+                flex-direction: column !important;
+                align-items: center !important;
+            }
+            
+            .card-body .d-flex.justify-content-between {
+                justify-content: center !important;
+                flex-direction: column !important;
+            }
+            
+            .card-body .text-center.text-md-start {
+                text-align: center !important;
+            }
+            
+            /* Force all elements in card to be centered */
+            .card-body * {
+                text-align: center !important;
+            }
+            
+            .card-body .badge {
+                margin: 0.125rem !important;
+            }
+            
+            /* Header stats centering */
+            .d-flex.justify-content-center.justify-content-md-end {
+                justify-content: center !important;
+                gap: 1.5rem !important;
+            }
+            
+            /* Container padding adjustments */
+            .container-fluid {
+                padding: 0.75rem !important;
+            }
+            
+            /* Card spacing */
+            .mb-3.mb-sm-4 {
+                margin-bottom: 1rem !important;
+            }
+              /* Grid spacing */
+            .g-3.g-md-4 {
+                --bs-gutter-x: 0.75rem;
+                --bs-gutter-y: 1rem;
+            }
+            
+            /* Additional mobile-specific centering */
+            .card-body .d-flex.justify-content-between.align-items-start {
+                flex-direction: column !important;
+                align-items: center !important;
+                text-align: center !important;
+            }
+            
+            .card-title.flex-grow-1 {
+                flex-grow: 0 !important;
+                margin-bottom: 0.5rem !important;
+            }
+            
+            .badge.bg-primary.ms-2 {
+                margin-left: 0 !important;
+                margin-top: 0.25rem !important;
+            }
         }
     </style>
 </head>
@@ -601,7 +745,7 @@
             <a class="navbar-brand" href="{{ url_for('dashboard') }}">
                 <i class="fas fa-graduation-cap me-2"></i>SmartExaM
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
@@ -621,8 +765,7 @@
         </div>
     </nav>
 
-    <div class="container-fluid px-2 px-sm-3 px-lg-5 py-3 py-sm-4">
-        <!-- Header -->
+    <div class="container-fluid px-2 px-sm-3 px-lg-5 py-3 py-sm-4">        <!-- Header -->
         <div class="card shadow-sm mb-3 mb-sm-4">
             <div class="card-body py-3 py-sm-4">
                 <div class="row align-items-center">
@@ -650,6 +793,16 @@
         <div class="row g-3 g-md-4">
             {% for resource in resources %}
             {% set progress = progress_data.get(resource.id) %}
+            {% set completed_tests = [] %}
+            {% if resource.linked_tests %}
+                {% for test in resource.linked_tests %}
+                    {% for result in current_user.results %}
+                        {% if result.test_id == test.id %}
+                            {% set _ = completed_tests.append(test.id) %}
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+            {% endif %}
             <div class="col-12 col-sm-6 col-lg-4">
                 <div class="card resource-card shadow-sm h-100" onclick="window.location.href='{{ url_for('view_resource', resource_id=resource.id) }}'">
                     <div class="resource-thumbnail">
@@ -660,24 +813,45 @@
                         {% else %}
                         <i class="fas fa-file-alt"></i>
                         {% endif %}                        
-                        <!-- Test Badge -->
+                        <!-- Test Badge with Completion Status -->
                         {% if resource.linked_tests %}
                         <div class="test-badge">
-                            <i class="fas fa-quiz me-1"></i>{{ resource.linked_tests|length }} Test{{ 's' if resource.linked_tests|length != 1 else '' }}
+                            {% if completed_tests|length == resource.linked_tests|length and resource.linked_tests|length > 0 %}
+                                <i class="fas fa-check-circle me-1 text-success"></i>All Quizzes Complete
+                            {% elif completed_tests|length > 0 %}
+                                <i class="fas fa-quiz me-1"></i>{{ completed_tests|length }}/{{ resource.linked_tests|length }} Quiz{{ 's' if resource.linked_tests|length != 1 else '' }} Complete
+                            {% else %}
+                                <i class="fas fa-quiz me-1"></i>{{ resource.linked_tests|length }} Test{{ 's' if resource.linked_tests|length != 1 else '' }}
+                            {% endif %}
                         </div>
                         {% endif %}
-                    </div>
-                    <div class="card-body d-flex flex-column">
+                    </div><div class="card-body d-flex flex-column">
                         <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h5 class="card-title mb-0 flex-grow-1">{{ resource.title }}</h5>
+                            <h5 class="card-title mb-0 flex-grow-1 text-center text-md-start">{{ resource.title }}</h5>
                             <span class="badge bg-primary ms-2">{{ resource.resource_type.title() }}</span>
                         </div>
                         
-                        <p class="card-text text-muted small mb-3">{{ resource.description[:80] }}{% if resource.description|length > 80 %}...{% endif %}</p>
+                        <p class="card-text text-muted small mb-3 text-center text-md-start">{{ resource.description[:80] }}{% if resource.description|length > 80 %}...{% endif %}</p>
+                          <!-- Quiz Progress Notice -->
+                        {% if resource.linked_tests %}
+                        <div class="mb-3 text-center">
+                            {% if completed_tests|length == resource.linked_tests|length and resource.linked_tests|length > 0 %}
+                                <div class="alert alert-success py-2 px-3 mb-0 d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-check-circle me-2"></i>
+                                    <strong>All Quiz Completed</strong>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-warning py-2 px-3 mb-0 d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-exclamation-circle me-2"></i>
+                                    <strong>Incomplete</strong>
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
                           <!-- File Count and Types for Multiple Files -->
                         {% if resource.files and resource.files|length > 1 %}
                         <div class="mb-3">
-                            <div class="d-flex flex-wrap gap-1">
+                            <div class="d-flex flex-wrap gap-1 justify-content-center justify-content-md-start">
                                 {% set video_count = resource.files|selectattr('file_type', 'equalto', 'video')|list|length %}
                                 {% set pdf_count = resource.files|selectattr('file_type', 'equalto', 'pdf')|list|length %}
                                 {% set doc_count = resource.files|selectattr('file_type', 'equalto', 'document')|list|length %}
@@ -701,7 +875,7 @@
                         </div>
                         {% endif %}                        <!-- Last Accessed Info -->
                         {% if progress %}
-                        <div class="mb-3">
+                        <div class="mb-3 text-center text-md-start">
                             {% if progress.last_accessed %}
                             <small class="text-muted d-block">
                                 <i class="fas fa-clock me-1"></i>Last opened: {{ progress.last_accessed.strftime('%m/%d/%Y at %I:%M %p') }}
@@ -713,7 +887,7 @@
                             {% endif %}
                         </div>
                         {% else %}
-                        <div class="mb-3">
+                        <div class="mb-3 text-center text-md-start">
                             <small class="text-info d-block">
                                 <i class="fas fa-star me-1"></i>New lesson - Never opened
                             </small>
@@ -722,7 +896,7 @@
                           
                         <!-- Start Learning Button -->
                         <div class="mt-auto text-center">
-                            <span class="badge bg-primary text-white">
+                            <span class="badge bg-primary text-white px-3 py-2">
                                 <i class="fas fa-play me-1"></i>Start Learning
                             </span>
                         </div>

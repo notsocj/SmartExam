@@ -76,26 +76,8 @@
             color: white;
             transform: scale(1.05);
         }
-        
-        .open-new-tab-btn {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 1000;
-            background: #007bff;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 8px 12px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 0.85rem;
-        }
-        
-        .open-new-tab-btn:hover {
-            background: #0056b3;
-            color: white;
-            transform: scale(1.05);
+          .open-new-tab-btn {
+            display: none;
         }
         
         /* Badge adjustments for mobile */
@@ -707,13 +689,9 @@
                                             <source src="{{ url_for('resource_file', filename=resource.file_path.split('/')[-1]) }}" type="video/mp4">
                                             Your browser does not support the video tag.
                                         </video>
-                                    </div>
-                                {% elif resource.resource_type == 'pdf' %}
-                                    <!-- PDF Viewer with New Tab Option -->
+                                    </div>                                {% elif resource.resource_type == 'pdf' %}
+                                    <!-- PDF Viewer -->
                                     <div class="document-wrapper">
-                                        <button class="open-new-tab-btn" onclick="openInNewTab()">
-                                            <i class="fas fa-external-link-alt me-1"></i>Open in New Tab
-                                        </button>
                                         <iframe class="document-container" 
                                                 src="{{ url_for('view_resource', resource_id=resource.id, direct=1) }}#toolbar=1&navpanes=1&scrollbar=1"
                                                 title="{{ resource.title }}">

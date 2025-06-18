@@ -418,8 +418,7 @@
                 <div class="section-header">
                     <h2 class="h3 mb-1">Administrative Overview</h2>
                     <p class="text-muted">Manage users, tests, and monitor student progress</p>
-                </div>                <!-- Quick Actions -->                <div class="row mb-5">
-                    <div class="col-lg-4 mb-4">
+                </div>                <!-- Quick Actions -->                <div class="row mb-5">                    <div class="col-lg-4 mb-4">
                         <div class="card stats-card shadow-sm h-100">
                             <div class="card-body p-4">
                                 <div class="d-flex align-items-center mb-3">
@@ -430,8 +429,7 @@
                                         <h5 class="card-title mb-1">User Management</h5>
                                         <p class="text-muted mb-0">Register and manage user accounts</p>
                                     </div>
-                                </div>
-                                <a href="{{ url_for('register') }}" class="btn btn-success w-100">
+                                </div>                                <a href="{{ url_for('register') }}" class="btn btn-success w-100 d-flex align-items-center justify-content-center">
                                     <i class="fas fa-user-plus me-2"></i>Register New User
                                 </a>
                             </div>
@@ -442,14 +440,13 @@
                             <div class="card-body p-4">
                                 <div class="d-flex align-items-center mb-3">
                                     <div class="bg-info rounded-circle p-3 me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                                        <i class="fas fa-book text-white fa-lg"></i>
+                                        <i class="fas fa-file-alt text-white fa-lg"></i>
                                     </div>
                                     <div>
                                         <h5 class="card-title mb-1">Test Management</h5>
-                                        <p class="text-muted mb-0">Create and manage assessments</p>
+                                        <p class="text-muted mb-0">Create and manage test assessments</p>
                                     </div>
-                                </div>
-                                <a href="{{ url_for('create_test') }}" class="btn btn-info text-white w-100">
+                                </div>                                <a href="{{ url_for('create_test') }}" class="btn btn-info text-white w-100 d-flex align-items-center justify-content-center">
                                     <i class="fas fa-plus-circle me-2"></i>Create & Manage Tests
                                 </a>
                             </div>
@@ -460,14 +457,13 @@
                             <div class="card-body p-4">
                                 <div class="d-flex align-items-center mb-3">
                                     <div class="bg-warning rounded-circle p-3 me-3 d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
-                                        <i class="fas fa-video text-white fa-lg"></i>
+                                        <i class="fas fa-book text-white fa-lg"></i>
                                     </div>
                                     <div>
                                         <h5 class="card-title mb-1">Learning Resources</h5>
-                                        <p class="text-muted mb-0">Upload videos and documents</p>
+                                        <p class="text-muted mb-0">Upload and manage learning materials</p>
                                     </div>
-                                </div>
-                                <a href="{{ url_for('learning_resources') }}" class="btn btn-warning text-white w-100">
+                                </div>                                <a href="{{ url_for('learning_resources') }}" class="btn btn-warning text-white w-100 d-flex align-items-center justify-content-center">
                                     <i class="fas fa-upload me-2"></i>Manage Resources
                                 </a>
                             </div>
