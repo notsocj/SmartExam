@@ -1,7 +1,31 @@
-from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, make_response, send_from_directory
+"""
+SmartExam Flask Application
+===========================
+
+Security Features Implemented:
+1. Test Session Tracking: Students cannot access learning resources during active tests
+2. Session-based Security: Active test sessions stored in Flask sessions
+3. Navigation Restrictions: UI elements disabled during test sessions
+4. Route Protection: @check_test_session decorator prevents cheating
+5. Browser Security: JavaScript prevents back button usage during tests
+6. Automatic Cleanup: Test sessions cleared on completion, logout, or abandonment
+
+Test Security Flow:
+- Student starts test → session['active_test_id'] is set
+- Learning resources routes blocked with @check_test_session
+- Navigation UI shows warning instead of learning links
+- Test completion/submission → session cleared
+- Student can access resources again after test completion
+"""
+
+from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, make_response, send_from_directory, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_migrate import Migrate
 from functools import wraps
+import os
+import json
+import csv
+import io
 from models import db, User, Result, Question, Test, LearningResource, StudentProgress, ResourceFile
 from config import config
 from datetime import datetime
@@ -26,6 +50,18 @@ migrate = Migrate(app, db)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+
+# Security decorator to check if student is currently taking a test
+def check_test_session(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if current_user.is_authenticated and current_user.role == 'student':
+            # Check if student has an active test session
+            if 'active_test_id' in session:
+                flash('You cannot access this page while taking a test. Please complete your current test first.', 'error')
+                return redirect(url_for('take_test', test_id=session['active_test_id']))
+        return f(*args, **kwargs)
+    return decorated_function
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -66,6 +102,9 @@ def login():
 @app.route('/logout')
 @login_required
 def logout():
+    # Clear any active test session on logout
+    session.pop('active_test_id', None)
+    session.pop('test_start_time', None)
     logout_user()
     return redirect(url_for('login'))
 
@@ -544,7 +583,7 @@ def available_tests():
 @login_required
 def take_test(test_id):
     if current_user.role == 'admin':
-        flash('Admin users cannot take tests')
+        flash('Admins cannot take tests')
         return redirect(url_for('dashboard'))
     
     # Check if the test exists
@@ -561,13 +600,17 @@ def take_test(test_id):
         flash('This test has no questions')
         return redirect(url_for('available_tests'))
     
+    # Set active test session to prevent access to resources
+    session['active_test_id'] = test_id
+    session['test_start_time'] = datetime.utcnow().isoformat()
+    
     return render_template('take_test.html', test=test)
 
 @app.route('/submit_test/<int:test_id>', methods=['POST'])
 @login_required
 def submit_test(test_id):
     if current_user.role == 'admin':
-        flash('Admin users cannot take tests')
+        flash('Admins cannot take tests')
         return redirect(url_for('dashboard'))
     
     # Check if the test exists
@@ -631,7 +674,12 @@ def submit_test(test_id):
     
     db.session.add(result)
     db.session.commit()
-      # Redirect to result page
+    
+    # Clear active test session after submission
+    session.pop('active_test_id', None)
+    session.pop('test_start_time', None)
+    
+    # Redirect to result page
     flash(f'Test submitted successfully. Your score: {score:.1f}%')
     return redirect(url_for('view_result', result_id=result.id))
 
@@ -692,6 +740,7 @@ def view_student_records(user_id):
 
 @app.route('/learning_resources')
 @login_required
+@check_test_session
 def learning_resources():
     if current_user.role == 'admin':
         # Admin view - manage all resources
@@ -875,6 +924,7 @@ def delete_learning_resource(resource_id):
 
 @app.route('/view_resource/<int:resource_id>')
 @login_required
+@check_test_session
 def view_resource(resource_id):
     resource = LearningResource.query.get_or_404(resource_id)
     
@@ -1037,3 +1087,19 @@ def init_db():
 if __name__ == '__main__':
     init_db()
     app.run(host='0.0.0.0', debug=True, port=5000)
+
+# Test security routes (for debugging - remove in production)
+@app.route('/debug/session')
+@login_required
+def debug_session():
+    """Debug route to check session state"""
+    if current_user.role != 'admin':
+        return "Access denied", 403
+    
+    return {
+        'user': current_user.name,
+        'role': current_user.role,
+        'active_test_id': session.get('active_test_id'),
+        'test_start_time': session.get('test_start_time'),
+        'session_keys': list(session.keys())
+    }

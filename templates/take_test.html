@@ -69,18 +69,12 @@
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
+            </button>            <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('dashboard') }}">
-                            <i class="fas fa-home me-1"></i>Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="{{ url_for('available_tests') }}">
-                            <i class="fas fa-list me-1"></i>Tests
-                        </a>
+                        <span class="nav-link text-warning">
+                            <i class="fas fa-exclamation-triangle me-1"></i>Test in Progress - Navigation Restricted
+                        </span>
                     </li>
                 </ul>
             </div>
@@ -285,12 +279,21 @@
             testForm.addEventListener('submit', function(e) {
                 clearInterval(timerInterval);
             });
-            
-            window.addEventListener('beforeunload', function(e) {
+              window.addEventListener('beforeunload', function(e) {
                 const confirmationMessage = 'If you leave this page, your test progress will be lost.';
                 e.returnValue = confirmationMessage;
                 return confirmationMessage;
             });
+
+            // Prevent back button during test
+            window.addEventListener('popstate', function(event) {
+                // Push the current state back to prevent navigation
+                window.history.pushState(null, null, window.location.pathname);
+                alert('Navigation is disabled during the test. Please complete or submit your test.');
+            });
+            
+            // Add an initial state to the history
+            window.history.pushState(null, null, window.location.pathname);
 
             // Add hover effects for multiple choice options
             document.querySelectorAll('.form-check').forEach(check => {

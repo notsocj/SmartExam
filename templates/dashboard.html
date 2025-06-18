@@ -321,8 +321,15 @@
                         <a class="nav-link active" href="{{ url_for('dashboard') }}">
                             <i class="fas fa-home me-1"></i>Dashboard
                         </a>
+                    </li>                    {% if current_user.role == 'student' %}                    <!-- Check for active test session -->
+                    {% if 'active_test_id' in session %}
+                    <li class="nav-item">
+                        <span class="nav-link text-warning">
+                            <i class="fas fa-exclamation-triangle me-1"></i>Test in Progress
+                        </span>
                     </li>
-                    {% if current_user.role == 'student' %}                    <li class="nav-item">
+                    {% else %}
+                    <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('available_tests') }}">
                             <i class="fas fa-book-reader me-1"></i>Tests
                         </a>
@@ -332,6 +339,7 @@
                             <i class="fas fa-video me-1"></i>Learning
                         </a>
                     </li>
+                    {% endif %}
                     {% endif %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
@@ -362,9 +370,7 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <!-- Flash Messages -->
+    </div>    <!-- Flash Messages -->
     {% with messages = get_flashed_messages() %}
     {% if messages %}
     <div class="container-fluid px-3 px-lg-5 mt-4">
@@ -376,7 +382,25 @@
         </div>
     </div>
     {% endif %}
-    {% endwith %}    <!-- Main Content -->
+    {% endwith %}
+
+    <!-- Active Test Warning for Students -->
+    {% if current_user.role == 'student' and 'active_test_id' in session %}
+    <div class="container-fluid px-3 px-lg-5 mt-4">
+        <div class="alert alert-warning alert-dismissible fade show shadow-sm" role="alert" style="border-left: 5px solid #ffc107;">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-exclamation-triangle fa-2x me-3 text-warning"></i>
+                <div>
+                    <h5 class="alert-heading mb-1"><strong>Test in Progress</strong></h5>
+                    <p class="mb-2">You have an active test session. Learning resources are temporarily restricted to ensure test integrity.</p>
+                    <a href="{{ url_for('take_test', test_id=session['active_test_id']) }}" class="btn btn-warning btn-sm">
+                        <i class="fas fa-play me-1"></i>Continue Test
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}<!-- Main Content -->
     <div class="container-fluid px-3 px-lg-5 py-4">
         <!-- Header Card -->
         <div class="card shadow-sm border-0" style="border-radius: 20px; margin-bottom: 2rem;">
