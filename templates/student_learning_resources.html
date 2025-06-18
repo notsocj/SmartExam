@@ -8,17 +8,24 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">    <style>
+        /* Base resource card styles */
         .resource-card {
             transition: all 0.3s ease;
             height: 100%;
             cursor: pointer;
+            border-radius: 16px;
+            overflow: hidden;
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
+        
         .resource-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.15);
         }
+        
+        /* Responsive thumbnail */
         .resource-thumbnail {
             width: 100%;
             height: 200px;
@@ -29,7 +36,9 @@
             color: white;
             font-size: 3rem;
             position: relative;
+            border-radius: 16px 16px 0 0;
         }
+        
         .progress-overlay {
             position: absolute;
             bottom: 0;
@@ -38,27 +47,557 @@
             height: 4px;
             background: rgba(255,255,255,0.3);
         }
+        
         .progress-bar-custom {
             height: 100%;
             background: #28a745;
             transition: width 0.3s ease;
         }
+        
         .test-badge {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(255,255,255,0.9);
+            top: 8px;
+            right: 8px;
+            background: rgba(255,255,255,0.95);
             color: #333;
-            border-radius: 20px;
-            padding: 5px 10px;
-            font-size: 0.8rem;
+            border-radius: 15px;
+            padding: 4px 8px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        /* Header responsive design */
+        .header-stats {
+            justify-content: center;
+            gap: 2rem;
+        }
+        
+        .stat-item {
+            text-align: center;
+            min-width: 80px;
+        }
+        
+        /* Card body responsive spacing */
+        .resource-card .card-body {
+            padding: 1.25rem;
+        }
+        
+        /* Badge responsive adjustments */
+        .resource-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+        }
+        
+        /* Progress bar responsive */
+        .progress-custom {
+            height: 6px;
+            border-radius: 3px;
+            background-color: #e9ecef;
+        }
+        
+        /* Desktop and large screens */
+        @media (min-width: 1200px) {
+            .container-fluid {
+                max-width: 1400px;
+                margin: 0 auto;
+            }
+            
+            .resource-thumbnail {
+                height: 220px;
+                font-size: 3.5rem;
+            }
+            
+            .resource-card .card-body {
+                padding: 1.5rem;
+            }
+        }
+        
+        /* Tablet landscape */
+        @media (max-width: 1199px) and (min-width: 992px) {
+            .resource-thumbnail {
+                height: 190px;
+                font-size: 2.8rem;
+            }
+        }
+        
+        /* Tablet portrait */
+        @media (max-width: 991px) and (min-width: 768px) {
+            .col-md-6 {
+                flex: 0 0 50%;
+                max-width: 50%;
+            }
+            
+            .resource-thumbnail {
+                height: 180px;
+                font-size: 2.5rem;
+            }
+            
+            .header-stats {
+                gap: 1.5rem;
+                margin-top: 1rem;
+            }
+        }
+        
+        /* Mobile landscape and small tablets */
+        @media (max-width: 767px) and (min-width: 576px) {
+            .container-fluid {
+                padding-left: 1.5rem;
+                padding-right: 1.5rem;
+            }
+            
+            .resource-card {
+                border-radius: 12px;
+                margin-bottom: 1.5rem;
+            }
+            
+            .resource-thumbnail {
+                height: 160px;
+                font-size: 2.2rem;
+                border-radius: 12px 12px 0 0;
+            }
+            
+            .resource-card .card-body {
+                padding: 1rem;
+            }
+            
+            .test-badge {
+                top: 6px;
+                right: 6px;
+                padding: 3px 6px;
+                font-size: 0.7rem;
+            }
+            
+            .header-stats {
+                justify-content: center;
+                gap: 1.5rem;
+                margin-top: 1rem;
+            }
+            
+            .stat-item {
+                min-width: 70px;
+            }
+            
+            .card-title {
+                font-size: 1.1rem;
+            }
+            
+            .badge {
+                font-size: 0.7rem;
+                padding: 0.3rem 0.6rem;
+            }
+        }
+        
+        /* Mobile portrait */
+        @media (max-width: 575px) {
+            .container-fluid {
+                padding-left: 1rem;
+                padding-right: 1rem;
+                padding-top: 1rem;
+                padding-bottom: 1rem;
+            }
+            
+            .resource-card {
+                border-radius: 10px;
+                margin-bottom: 1.25rem;
+            }
+            
+            .resource-thumbnail {
+                height: 140px;
+                font-size: 2rem;
+                border-radius: 10px 10px 0 0;
+            }
+            
+            .resource-card .card-body {
+                padding: 0.875rem;
+            }
+            
+            .test-badge {
+                top: 5px;
+                right: 5px;
+                padding: 2px 5px;
+                font-size: 0.65rem;
+                border-radius: 10px;
+            }
+            
+            .header-stats {
+                flex-direction: row;
+                justify-content: center;
+                gap: 1.5rem;
+                margin-top: 1rem;
+            }
+            
+            .stat-item {
+                min-width: 60px;
+            }
+            
+            .stat-item .fw-bold {
+                font-size: 1.25rem;
+            }
+            
+            .stat-item small {
+                font-size: 0.8rem;
+            }
+            
+            .card-title {
+                font-size: 1rem;
+                line-height: 1.3;
+                margin-bottom: 0.5rem;
+            }
+            
+            .card-text {
+                font-size: 0.85rem;
+                line-height: 1.4;
+                margin-bottom: 0.75rem;
+            }
+            
+            .badge {
+                font-size: 0.65rem;
+                padding: 0.25rem 0.5rem;
+                margin-bottom: 0.25rem;
+            }
+            
+            .progress-custom {
+                height: 5px;
+            }
+            
+            .d-flex.justify-content-between.text-muted.small {
+                font-size: 0.75rem;
+            }
+            
+            /* Header responsive */
+            .h3 {
+                font-size: 1.3rem;
+            }
+            
+            .text-muted {
+                font-size: 0.85rem;
+            }
+            
+            /* Stack header content on very small screens */
+            .row.align-items-center > .col-md-8,
+            .row.align-items-center > .col-md-4 {
+                text-align: center;
+            }
+            
+            .row.align-items-center > .col-md-4 {
+                margin-top: 1rem;
+            }
+        }
+          /* Very small screens */
+        @media (max-width: 375px) {
+            .container-fluid {
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+            
+            .resource-card {
+                border-radius: 8px;
+                margin-bottom: 1rem;
+            }
+            
+            .resource-thumbnail {
+                height: 120px;
+                font-size: 1.8rem;
+                border-radius: 8px 8px 0 0;
+            }
+            
+            .resource-card .card-body {
+                padding: 0.75rem;
+            }
+            
+            .card-title {
+                font-size: 0.95rem;
+            }
+            
+            .card-text {
+                font-size: 0.8rem;
+            }
+            
+            .badge {
+                font-size: 0.6rem;
+                padding: 0.2rem 0.4rem;
+            }
+            
+            .test-badge {
+                font-size: 0.6rem;
+                padding: 2px 4px;
+            }
+            
+            .header-stats {
+                gap: 1rem;
+            }
+            
+            .stat-item {
+                min-width: 50px;
+            }
+            
+            .stat-item .fw-bold {
+                font-size: 1.1rem;
+            }
+            
+            .stat-item small {
+                font-size: 0.75rem;
+            }
+        }
+        
+        /* Extra small screens (320px and below) */
+        @media (max-width: 320px) {
+            .container-fluid {
+                padding-left: 0.5rem;
+                padding-right: 0.5rem;
+            }
+            
+            .card-body {
+                padding: 0.5rem !important;
+            }
+            
+            .card-header {
+                padding: 0.5rem;
+            }
+            
+            .resource-thumbnail {
+                height: 100px;
+                font-size: 1.5rem;
+            }
+            
+            .card-title {
+                font-size: 0.9rem;
+            }
+            
+            .badge {
+                font-size: 0.55rem;
+                padding: 0.15rem 0.35rem;
+            }
+            
+            .stat-item .fw-bold {
+                font-size: 1rem;
+            }
+            
+            .stat-item small {
+                font-size: 0.7rem;
+            }
+        }
+        
+        /* Landscape orientation adjustments for mobile */
+        @media (max-width: 767px) and (orientation: landscape) {
+            .resource-thumbnail {
+                height: 120px;
+            }
+            
+            .container-fluid {
+                padding-top: 0.75rem;
+                padding-bottom: 0.75rem;
+            }
+            
+            .navbar {
+                padding-top: 0.25rem;
+                padding-bottom: 0.25rem;
+            }
+            
+            .card-body {
+                padding: 0.75rem !important;
+            }
+        }
+        
+        /* Touch-friendly adjustments */
+        @media (hover: none) and (pointer: coarse) {
+            .resource-card:hover {
+                transform: none;
+            }
+            
+            .resource-card:active {
+                transform: scale(0.98);
+                transition: transform 0.1s ease;
+            }
+            
+            .test-badge {
+                min-height: 24px;
+                min-width: 24px;
+            }
+            
+            /* Better touch targets */
+            .resource-card {
+                cursor: pointer;
+                -webkit-tap-highlight-color: rgba(40, 167, 69, 0.1);
+            }
+        }
+        
+        /* Grid responsive behavior */
+        @media (max-width: 575px) {
+            .col-md-6,
+            .col-lg-4 {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+            
+            .g-3 {
+                --bs-gutter-x: 1rem;
+                --bs-gutter-y: 1rem;
+            }
+        }
+        
+        @media (min-width: 576px) and (max-width: 767px) {
+            .col-lg-4 {
+                flex: 0 0 50%;
+                max-width: 50%;
+            }
+        }
+        
+        /* Empty state responsive */
+        .empty-state {
+            padding: 3rem 1rem;
+        }
+        
+        @media (max-width: 575px) {
+            .empty-state {
+                padding: 2rem 1rem;
+            }
+            
+            .empty-state .fa-3x {
+                font-size: 2rem;
+            }
+            
+            .empty-state h5 {
+                font-size: 1.1rem;
+            }
+            
+            .empty-state p {
+                font-size: 0.9rem;
+            }
+        }
+        
+        /* Navbar mobile optimizations */
+        @media (max-width: 575px) {
+            .navbar-brand {
+                font-size: 1.1rem;
+            }
+            
+            .nav-link {
+                font-size: 0.9rem;
+                padding: 0.5rem 0.75rem !important;
+            }
+            
+            .navbar-toggler {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.9rem;
+            }
+        }
+        
+        /* Badge and progress improvements on mobile */
+        @media (max-width: 575px) {
+            .badge {
+                margin-right: 0.25rem !important;
+                margin-bottom: 0.25rem;
+                display: inline-block;
+                word-break: break-word;
+            }
+            
+            .progress {
+                height: 4px !important;
+            }
+            
+            .d-flex.justify-content-between {
+                font-size: 0.75rem;
+            }
+        }
+        
+        /* Card spacing improvements */
+        @media (max-width: 767px) {
+            .file-card,
+            .resource-card {
+                margin-bottom: 1rem;
+            }
+            
+            .mb-4 {
+                margin-bottom: 1.5rem !important;
+            }
+            
+            .mt-4 {
+                margin-top: 1.5rem !important;
+            }
+        }
+        
+        @media (max-width: 575px) {
+            .mb-4 {
+                margin-bottom: 1rem !important;
+            }
+            
+            .mt-4 {
+                margin-top: 1rem !important;
+            }
+            
+            .py-3 {
+                padding-top: 0.75rem !important;
+                padding-bottom: 0.75rem !important;
+            }
+        }
+        
+        /* Accessibility improvements */
+        @media (prefers-reduced-motion: reduce) {
+            .resource-card {
+                transition: none;
+            }
+            
+            .resource-card:hover {
+                transform: none;
+            }
+        }
+        
+        /* High contrast mode */
+        @media (prefers-contrast: high) {
+            .resource-card {
+                border: 2px solid #333;
+            }
+            
+            .test-badge {
+                border: 1px solid #333;
+            }
+        }
+        
+        /* Focus states for better accessibility */
+        .resource-card:focus {
+            outline: 2px solid #007bff;
+            outline-offset: 2px;
+        }
+        
+        /* Improved text scaling */
+        @media (max-width: 575px) {
+            .card-text {
+                font-size: 0.85rem;
+                line-height: 1.4;
+            }
+            
+            .small {
+                font-size: 0.8rem !important;
+            }
+            
+            .text-muted {
+                font-size: 0.85rem;
+            }
+            
+            h1, .h1 {
+                font-size: 1.5rem;
+            }
+            
+            h2, .h2 {
+                font-size: 1.3rem;
+            }
+            
+            h3, .h3 {
+                font-size: 1.2rem;
+            }
+            
+            h5, .h5 {
+                font-size: 1rem;
+            }
         }
     </style>
 </head>
-<body class="bg-light">
-    <!-- Navigation -->
+<body class="bg-light">    <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
-        <div class="container-fluid px-3 px-lg-5">
+        <div class="container-fluid px-2 px-sm-3 px-lg-5">
             <a class="navbar-brand" href="{{ url_for('dashboard') }}">
                 <i class="fas fa-graduation-cap me-2"></i>SmartExaM
             </a>
@@ -82,23 +621,23 @@
         </div>
     </nav>
 
-    <div class="container-fluid px-3 px-lg-5 py-4">
+    <div class="container-fluid px-2 px-sm-3 px-lg-5 py-3 py-sm-4">
         <!-- Header -->
-        <div class="card shadow-sm mb-4">
-            <div class="card-body">
+        <div class="card shadow-sm mb-3 mb-sm-4">
+            <div class="card-body py-3 py-sm-4">
                 <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <h1 class="h3 mb-0 text-primary">Learning Resources</h1>
+                    <div class="col-12 col-md-8 text-center text-md-start">
+                        <h1 class="h3 h2-sm mb-1 mb-sm-2 text-primary">Learning Resources</h1>
                         <p class="text-muted mb-0">Explore educational content and take related assessments</p>
                     </div>
-                    <div class="col-md-4 text-md-end">
-                        <div class="d-flex justify-content-md-end gap-3">
+                    <div class="col-12 col-md-4 text-center text-md-end mt-3 mt-md-0">
+                        <div class="d-flex justify-content-center justify-content-md-end gap-2 gap-sm-3">
                             <div class="text-center">
-                                <div class="fw-bold text-primary">{{ resources|length }}</div>
+                                <div class="fw-bold text-primary fs-5 fs-sm-4">{{ resources|length }}</div>
                                 <small class="text-muted">Resources</small>
                             </div>
                             <div class="text-center">
-                                <div class="fw-bold text-success">
+                                <div class="fw-bold text-success fs-5 fs-sm-4">
                                     {{ progress_data.values() | selectattr('completed', 'equalto', true) | list | length }}
                                 </div>
                                 <small class="text-muted">Completed</small>
@@ -107,14 +646,12 @@
                     </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Resources Grid -->
-        <div class="row">
+        </div>        <!-- Resources Grid -->
+        <div class="row g-3 g-md-4">
             {% for resource in resources %}
             {% set progress = progress_data.get(resource.id) %}
-            <div class="col-md-6 col-lg-4 mb-4">
-                <div class="card resource-card shadow-sm" onclick="window.location.href='{{ url_for('view_resource', resource_id=resource.id) }}'">
+            <div class="col-12 col-sm-6 col-lg-4">
+                <div class="card resource-card shadow-sm h-100" onclick="window.location.href='{{ url_for('view_resource', resource_id=resource.id) }}'">
                     <div class="resource-thumbnail">
                         {% if resource.resource_type == 'video' %}
                         <i class="fas fa-play-circle"></i>
@@ -122,15 +659,7 @@
                         <i class="fas fa-file-pdf"></i>
                         {% else %}
                         <i class="fas fa-file-alt"></i>
-                        {% endif %}
-                        
-                        <!-- Progress Bar -->
-                        {% if progress %}
-                        <div class="progress-overlay">
-                            <div class="progress-bar-custom" style="width: {{ progress.progress_percentage }}%"></div>
-                        </div>
-                        {% endif %}
-                        
+                        {% endif %}                        
                         <!-- Test Badge -->
                         {% if resource.linked_tests %}
                         <div class="test-badge">
@@ -138,17 +667,16 @@
                         </div>
                         {% endif %}
                     </div>
-                    <div class="card-body">
+                    <div class="card-body d-flex flex-column">
                         <div class="d-flex justify-content-between align-items-start mb-2">
-                            <h5 class="card-title mb-0">{{ resource.title }}</h5>
-                            <span class="badge bg-primary">{{ resource.resource_type.title() }}</span>
+                            <h5 class="card-title mb-0 flex-grow-1">{{ resource.title }}</h5>
+                            <span class="badge bg-primary ms-2">{{ resource.resource_type.title() }}</span>
                         </div>
                         
-                        <p class="card-text text-muted small">{{ resource.description[:80] }}{% if resource.description|length > 80 %}...{% endif %}</p>
-                        
-                        <!-- File Count and Types for Multiple Files -->
+                        <p class="card-text text-muted small mb-3">{{ resource.description[:80] }}{% if resource.description|length > 80 %}...{% endif %}</p>
+                          <!-- File Count and Types for Multiple Files -->
                         {% if resource.files and resource.files|length > 1 %}
-                        <div class="mb-2">
+                        <div class="mb-3">
                             <div class="d-flex flex-wrap gap-1">
                                 {% set video_count = resource.files|selectattr('file_type', 'equalto', 'video')|list|length %}
                                 {% set pdf_count = resource.files|selectattr('file_type', 'equalto', 'pdf')|list|length %}
@@ -171,35 +699,33 @@
                                 {% endif %}
                             </div>
                         </div>
-                        {% endif %}
-                        
-                        <!-- Progress Info -->
+                        {% endif %}                        <!-- Last Accessed Info -->
                         {% if progress %}
-                        <div class="d-flex justify-content-between align-items-center mt-3">
-                            <div class="progress flex-grow-1 me-3" style="height: 6px;">
-                                <div class="progress-bar bg-success" style="width: {{ progress.progress_percentage }}%"></div>
-                            </div>
-                            <small class="text-muted">{{ progress.progress_percentage|round|int }}%</small>
-                        </div>
-                        <div class="d-flex justify-content-between text-muted small mt-2">
-                            <span>
-                                {% if progress.completed %}
-                                <i class="fas fa-check-circle text-success me-1"></i>Completed
-                                {% else %}
-                                <i class="fas fa-clock me-1"></i>In Progress
-                                {% endif %}
-                            </span>
+                        <div class="mb-3">
                             {% if progress.last_accessed %}
-                            <span>Last viewed: {{ progress.last_accessed.strftime('%m/%d') }}</span>
+                            <small class="text-muted d-block">
+                                <i class="fas fa-clock me-1"></i>Last opened: {{ progress.last_accessed.strftime('%m/%d/%Y at %I:%M %p') }}
+                            </small>
+                            {% else %}
+                            <small class="text-info d-block">
+                                <i class="fas fa-star me-1"></i>New lesson - Never opened
+                            </small>
                             {% endif %}
                         </div>
                         {% else %}
-                        <div class="text-center mt-3">
-                            <span class="badge bg-light text-dark">
+                        <div class="mb-3">
+                            <small class="text-info d-block">
+                                <i class="fas fa-star me-1"></i>New lesson - Never opened
+                            </small>
+                        </div>
+                        {% endif %}
+                          
+                        <!-- Start Learning Button -->
+                        <div class="mt-auto text-center">
+                            <span class="badge bg-primary text-white">
                                 <i class="fas fa-play me-1"></i>Start Learning
                             </span>
                         </div>
-                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -207,7 +733,7 @@
             
             {% if not resources %}
             <div class="col-12">
-                <div class="text-center py-5">
+                <div class="text-center empty-state">
                     <i class="fas fa-book-open fa-3x text-muted mb-3"></i>
                     <h5 class="text-muted">No Learning Resources Available</h5>
                     <p class="text-muted">Check back later for new learning materials.</p>
