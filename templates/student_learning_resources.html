@@ -813,15 +813,14 @@
                         {% else %}
                         <i class="fas fa-file-alt"></i>
                         {% endif %}                        
-                        <!-- Test Badge with Completion Status -->
-                        {% if resource.linked_tests %}
+                        <!-- Test Badge with Completion Status -->                        {% if resource.linked_tests %}
                         <div class="test-badge">
                             {% if completed_tests|length == resource.linked_tests|length and resource.linked_tests|length > 0 %}
                                 <i class="fas fa-check-circle me-1 text-success"></i>All Quizzes Complete
                             {% elif completed_tests|length > 0 %}
-                                <i class="fas fa-quiz me-1"></i>{{ completed_tests|length }}/{{ resource.linked_tests|length }} Quiz{{ 's' if resource.linked_tests|length != 1 else '' }} Complete
+                                <i class="fas fa-quiz me-1"></i>{{ completed_tests|length }}/{{ resource.linked_tests|length }} Quiz{{ 'zes' if resource.linked_tests|length != 1 else '' }} Complete
                             {% else %}
-                                <i class="fas fa-quiz me-1"></i>{{ resource.linked_tests|length }} Test{{ 's' if resource.linked_tests|length != 1 else '' }}
+                                <i class="fas fa-quiz me-1"></i>{{ resource.linked_tests|length }} Quiz{{ 'zes' if resource.linked_tests|length != 1 else '' }}
                             {% endif %}
                         </div>
                         {% endif %}
@@ -832,13 +831,12 @@
                         </div>
                         
                         <p class="card-text text-muted small mb-3 text-center text-md-start">{{ resource.description[:80] }}{% if resource.description|length > 80 %}...{% endif %}</p>
-                          <!-- Quiz Progress Notice -->
-                        {% if resource.linked_tests %}
+                          <!-- Quiz Progress Notice -->                        {% if resource.linked_tests %}
                         <div class="mb-3 text-center">
                             {% if completed_tests|length == resource.linked_tests|length and resource.linked_tests|length > 0 %}
                                 <div class="alert alert-success py-2 px-3 mb-0 d-flex align-items-center justify-content-center">
                                     <i class="fas fa-check-circle me-2"></i>
-                                    <strong>All Quiz Completed</strong>
+                                    <strong>All Quizzes Completed</strong>
                                 </div>
                             {% else %}
                                 <div class="alert alert-warning py-2 px-3 mb-0 d-flex align-items-center justify-content-center">
