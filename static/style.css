@@ -719,51 +719,94 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: 16px 16px 0 0;
 }
 
-/* Video player optimizations for mobile */
-video {
-    width: 100% !important;
-    height: auto !important;
-    max-height: 70vh;
-    border-radius: 8px;
-}
-
-/* Fullscreen video styles */
-video:fullscreen {
-    width: 100vw !important;
-    height: 100vh !important;
-    object-fit: contain;
-}
-
-video:-webkit-full-screen {
-    width: 100vw !important;
-    height: 100vh !important;
-    object-fit: contain;
-}
-
-video:-moz-full-screen {
-    width: 100vw !important;
-    height: 100vh !important;
-    object-fit: contain;
-}
-
-/* PDF viewer mobile optimizations */
-iframe.document-container {
-    border-radius: 8px;
-    min-height: 60vh;
-}
-
-/* Progress tracking components */
-.progress-circle {
-    flex-shrink: 0;
-}
-
-.test-card {
+/* Responsive Video and Document Containers */
+.video-container {
+    position: relative;
+    width: 100%;
+    background: #000;
     border-radius: 12px;
-    transition: all 0.3s ease;
+    overflow: hidden;
 }
 
-.test-card:hover {
-    background-color: rgba(40, 167, 69, 0.02);
+.video-container video {
+    width: 100%;
+    height: auto;
+    display: block;
+    max-height: 80vh;
+    min-height: 200px;
+    object-fit: contain;
+}
+
+.document-container {
+    width: 100%;
+    border: none;
+    border-radius: 12px;
+    height: auto;
+    min-height: 400px;
+    max-height: 80vh;
+    resize: vertical;
+    overflow: auto;
+}
+
+.document-wrapper {
+    position: relative;
+    width: 100%;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    min-height: 400px;
+    height: auto;
+}
+
+/* Resource viewer responsive behavior */
+.resource-viewer {
+    background: #f8f9fa;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+}
+
+/* File card responsive behavior */
+.file-card {
+    margin-bottom: 2rem;
+    width: 100%;
+}
+
+.file-card:last-child {
+    margin-bottom: 1rem;
+}
+
+/* Button positioning for resource controls */
+.fullscreen-btn,
+.open-new-tab-btn {
+    position: absolute;
+    top: 10px;
+    z-index: 1000;
+    border: none;
+    border-radius: 6px;
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    color: white;
+}
+
+.fullscreen-btn {
+    right: 10px;
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.fullscreen-btn:hover {
+    background: rgba(0, 0, 0, 0.9);
+}
+
+.open-new-tab-btn {
+    left: 10px;
+    background: #007bff;
+}
+
+.open-new-tab-btn:hover {
+    background: #0056b3;
 }
 
 /* Mobile-specific learning resource styles */
@@ -778,27 +821,39 @@ iframe.document-container {
         border-radius: 12px 12px 0 0;
     }
     
-    .resource-viewer {
-        margin-left: -1rem;
-        margin-right: -1rem;
-        border-radius: 0;
+    .video-container {
+        border-radius: 8px;
     }
     
-    .video-container {
-        height: auto;
+    .video-container video {
+        max-height: 60vh;
         min-height: 200px;
+        border-radius: 8px;
     }
     
     .document-container {
-        height: 60vh;
-        min-height: 400px;
+        min-height: 350px;
+        max-height: 60vh;
+        border-radius: 8px;
+    }
+    
+    .document-wrapper {
+        min-height: 350px;
+        border-radius: 8px;
+    }
+    
+    .fullscreen-btn, .open-new-tab-btn {
+        top: 5px;
+        padding: 8px 12px;
+        font-size: 0.9rem;
     }
     
     .fullscreen-btn {
-        top: 5px;
         right: 5px;
-        padding: 8px;
-        font-size: 0.9rem;
+    }
+    
+    .open-new-tab-btn {
+        left: 5px;
     }
     
     .progress-circle {
@@ -837,13 +892,15 @@ iframe.document-container {
         font-size: 2rem;
     }
     
-    .video-container {
+    .video-container video {
         min-height: 180px;
+        max-height: 50vh;
+        border-radius: 6px;
     }
     
     .document-container {
-        height: 50vh;
         min-height: 350px;
+        max-height: 50vh;
     }
     
     .progress-circle {

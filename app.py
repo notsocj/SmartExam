@@ -315,7 +315,10 @@ def allowed_file(filename):
 # Learning Resources File Upload Functions
 def allowed_learning_file(filename):
     ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'wmv', 'flv', 'webm', 'pdf', 'doc', 'docx', 'ppt', 'pptx', 'txt'}
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    if not filename or '.' not in filename:
+        return False
+    extension = filename.rsplit('.', 1)[1].lower()
+    return extension in ALLOWED_EXTENSIONS
 
 def get_file_type(filename):
     """Determine file type based on extension"""
@@ -723,23 +726,33 @@ def upload_learning_resource():
         if not title:
             flash('Title is required', 'error')
             return redirect(url_for('learning_resources'))
-        
-        # Get multiple files
+          # Get multiple files
         uploaded_files = request.files.getlist('resource_files')
         
         if not uploaded_files or all(file.filename == '' for file in uploaded_files):
             flash('At least one file is required', 'error')
             return redirect(url_for('learning_resources'))
         
-        # Validate all files
+        # Filter out empty files and validate
         valid_files = []
+        invalid_files = []
+        
         for file in uploaded_files:
-            if file.filename and allowed_learning_file(file.filename):
-                valid_files.append(file)
+            if file and file.filename and file.filename.strip():
+                if allowed_learning_file(file.filename):
+                    valid_files.append(file)
+                else:
+                    invalid_files.append(file.filename)
         
         if not valid_files:
-            flash('No valid files found. Please upload MP4, PDF, DOC, or TXT files.', 'error')
+            if invalid_files:
+                flash(f'Invalid file types detected: {", ".join(invalid_files)}. Please upload only MP4, AVI, MOV, WMV, FLV, WEBM, PDF, DOC, DOCX, PPT, PPTX, or TXT files.', 'error')
+            else:
+                flash('No valid files found. Please upload video, PDF, or document files.', 'error')
             return redirect(url_for('learning_resources'))
+        
+        if invalid_files:
+            flash(f'Some files were skipped due to invalid formats: {", ".join(invalid_files)}. Only valid files were uploaded.', 'warning')
         
         # Determine resource type based on uploaded files
         file_types = [get_file_type(file.filename) for file in valid_files]
@@ -801,7 +814,7 @@ def upload_learning_resource():
             resource.file_path = f"learning_resources/{resource.id}_0_{first_filename}"
         
         db.session.commit()
-        flash('Learning resource uploaded successfully!', 'success')
+        flash(f'Learning resource uploaded successfully with {len(valid_files)} file(s)!', 'success')
         
     except Exception as e:
         db.session.rollback()
