@@ -64,9 +64,7 @@
             border-color: #667eea;
             box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
             background: white;
-        }
-        
-        .btn-login {
+        }        .btn-login {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
             border-radius: 12px;
@@ -75,6 +73,19 @@
             font-size: 16px;
             transition: all 0.3s ease;
             color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            gap: 8px;
+        }
+        
+        .btn-login i {
+            font-size: 16px;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .btn-login:hover {
@@ -358,11 +369,10 @@
                             <div class="invalid-feedback">
                                 Please enter your password.
                             </div>
-                        </div>
-                        
-                        <div class="d-grid mb-3">
+                        </div>                        <div class="d-grid mb-3">
                             <button type="submit" class="btn btn-login">
-                                <i class="fas fa-sign-in-alt me-2"></i>Sign In
+                                <i class="fas fa-sign-in-alt"></i>
+                                <span>Sign In</span>
                             </button>
                         </div>
                         
