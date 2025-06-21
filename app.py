@@ -22,10 +22,6 @@ from flask import Flask, render_template, redirect, url_for, flash, request, jso
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_migrate import Migrate
 from functools import wraps
-import os
-import json
-import csv
-import io
 from models import db, User, Result, Question, Test, LearningResource, StudentProgress, ResourceFile
 from config import config
 from datetime import datetime
@@ -34,11 +30,28 @@ import os
 import json
 import csv
 import io
+import threading
+from concurrent.futures import ThreadPoolExecutor
 
 # Get environment configuration
 config_name = os.environ.get('FLASK_ENV', 'default')
 app = Flask(__name__)
 app.config.from_object(config[config_name])
+
+# Configure session for multi-device support
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_KEY_PREFIX'] = 'smartexam:'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+# Configure threading for concurrent access
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 300
+app.config['THREADED'] = True
+
+# Initialize thread pool for handling concurrent requests
+executor = ThreadPoolExecutor(max_workers=10)
 
 # Initialize database
 db.init_app(app)
@@ -46,10 +59,12 @@ db.init_app(app)
 # Initialize Flask-Migrate
 migrate = Migrate(app, db)
 
-# Initialize login manager
+# Initialize login manager with session protection
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
+login_manager.session_protection = "strong"
+login_manager.remember_cookie_duration = None
 
 # Security decorator to check if student is currently taking a test
 def check_test_session(f):
@@ -1086,7 +1101,8 @@ def init_db():
 
 if __name__ == '__main__':
     init_db()
-    app.run(host='0.0.0.0', debug=True, port=5000)
+    # Enable multiple device access on same network with proper threading
+    app.run(host='0.0.0.0', debug=True, port=5000, threaded=True, processes=1, use_reloader=False)
 
 # Test security routes (for debugging - remove in production)
 @app.route('/debug/session')
