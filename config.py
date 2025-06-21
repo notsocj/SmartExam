@@ -11,11 +11,26 @@ class Config:
         os.makedirs(DB_DIR)
     # SQLite database path
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or \
-        f'sqlite:///{os.path.join(DB_DIR, "walo.db")}'
-    SQLALCHEMY_TRACK_MODIFICATIONS = False    # File upload settings
+        f'sqlite:///{os.path.join(DB_DIR, "smartexam.db")}'
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    
+    # Session configuration for multi-user support
+    SESSION_TYPE = 'filesystem'
+    SESSION_PERMANENT = False
+    SESSION_USE_SIGNER = True
+    SESSION_KEY_PREFIX = 'smartexam:'
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    
+    # File upload settings
     UPLOAD_FOLDER = os.path.join(basedir, 'static', 'uploads')
     LEARNING_RESOURCES_FOLDER = os.path.join(UPLOAD_FOLDER, 'learning_resources')
     MAX_CONTENT_LENGTH = 1024 * 1024 * 1024  # 1GB max file size
+    
+    # Performance settings for concurrent access
+    SEND_FILE_MAX_AGE_DEFAULT = 300
+    THREADED = True
     
     # Create upload directories if they don't exist
     for folder in [UPLOAD_FOLDER, LEARNING_RESOURCES_FOLDER]:

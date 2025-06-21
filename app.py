@@ -26,12 +26,11 @@ from models import db, User, Result, Question, Test, LearningResource, StudentPr
 from config import config
 from datetime import datetime
 from werkzeug.utils import secure_filename
+from concurrent.futures import ThreadPoolExecutor
 import os
 import json
 import csv
 import io
-import threading
-from concurrent.futures import ThreadPoolExecutor
 
 # Get environment configuration
 config_name = os.environ.get('FLASK_ENV', 'default')
@@ -50,8 +49,28 @@ app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 300
 app.config['THREADED'] = True
 
-# Initialize thread pool for handling concurrent requests
-executor = ThreadPoolExecutor(max_workers=10)
+# Initialize thread pool for handling concurrent requests - increased for more students
+executor = ThreadPoolExecutor(max_workers=25)
+
+# Configure SQLite for better concurrent access
+if 'sqlite' in app.config['SQLALCHEMY_DATABASE_URI']:
+    from sqlalchemy import event
+    from sqlalchemy.engine import Engine
+    import sqlite3
+    
+    @event.listens_for(Engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        if isinstance(dbapi_connection, sqlite3.Connection):
+            cursor = dbapi_connection.cursor()
+            # Enable WAL mode for better concurrent access
+            cursor.execute("PRAGMA journal_mode=WAL")
+            # Increase timeout for concurrent access
+            cursor.execute("PRAGMA busy_timeout=30000")
+            # Optimize for concurrent reads
+            cursor.execute("PRAGMA synchronous=NORMAL")
+            cursor.execute("PRAGMA cache_size=10000")
+            cursor.execute("PRAGMA temp_store=MEMORY")
+            cursor.close()
 
 # Initialize database
 db.init_app(app)
