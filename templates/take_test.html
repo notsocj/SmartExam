@@ -44,6 +44,24 @@
             padding-top: 100px;
             min-height: 100vh;
         }
+        
+        /* Submit button alignment fix */
+        .btn-submit {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 0.5rem !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
+        
+        .btn-submit i {
+            margin: 0 !important;
+            display: inline-block !important;
+            vertical-align: middle !important;
+            line-height: 1 !important;
+        }
+        
         @media (max-width: 768px) {
             .timer-container {
                 position: relative;
@@ -213,8 +231,9 @@
                 <div class="row mb-5">
                     <div class="col-12">
                         <div class="text-center">
-                            <button type="submit" class="btn btn-primary btn-lg px-5 py-3 shadow">
-                                <i class="fas fa-paper-plane me-2"></i>Submit Test
+                            <button type="submit" class="btn btn-primary btn-lg px-5 py-3 shadow btn-submit">
+                                <i class="fas fa-paper-plane"></i>
+                                <span>Submit Test</span>
                             </button>
                         </div>
                     </div>

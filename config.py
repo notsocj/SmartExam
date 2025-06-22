@@ -4,7 +4,7 @@ import os
 basedir = os.path.abspath(os.path.dirname(__file__))
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'development-secret-key'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'development-secret-key-change-in-production-2024'
     # Create a database directory if it doesn't exist
     DB_DIR = os.path.join(basedir, 'database')
     if not os.path.exists(DB_DIR):
@@ -14,14 +14,16 @@ class Config:
         f'sqlite:///{os.path.join(DB_DIR, "smartexam.db")}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
-    # Session configuration for multi-user support
+    # Session configuration for better persistence
     SESSION_TYPE = 'filesystem'
-    SESSION_PERMANENT = False
+    SESSION_PERMANENT = True
     SESSION_USE_SIGNER = True
     SESSION_KEY_PREFIX = 'smartexam:'
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
     SESSION_COOKIE_SAMESITE = 'Lax'
+    SESSION_COOKIE_NAME = 'smartexam_session'
+    PERMANENT_SESSION_LIFETIME = 86400  # 24 hours
     
     # File upload settings
     UPLOAD_FOLDER = os.path.join(basedir, 'static', 'uploads')
@@ -37,6 +39,11 @@ class Config:
         if not os.path.exists(folder):
             os.makedirs(folder)
     
+    # Create session directory if using filesystem sessions
+    SESSION_FILE_DIR = os.path.join(basedir, 'flask_session')
+    if not os.path.exists(SESSION_FILE_DIR):
+        os.makedirs(SESSION_FILE_DIR)
+
 class DevelopmentConfig(Config):
     DEBUG = True
     

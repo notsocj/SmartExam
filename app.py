@@ -21,6 +21,7 @@ Test Security Flow:
 from flask import Flask, render_template, redirect, url_for, flash, request, jsonify, make_response, send_from_directory, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_migrate import Migrate
+from flask_session import Session
 from functools import wraps
 from models import db, User, Result, Question, Test, LearningResource, StudentProgress, ResourceFile
 from config import config
@@ -37,13 +38,15 @@ config_name = os.environ.get('FLASK_ENV', 'default')
 app = Flask(__name__)
 app.config.from_object(config[config_name])
 
-# Configure session for multi-device support
-app.config['SESSION_PERMANENT'] = False
+# Configure session for better persistence
+app.config['SESSION_PERMANENT'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24 hours in seconds
 app.config['SESSION_USE_SIGNER'] = True
 app.config['SESSION_KEY_PREFIX'] = 'smartexam:'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_NAME'] = 'smartexam_session'
 
 # Configure threading for concurrent access
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 300
@@ -78,12 +81,17 @@ db.init_app(app)
 # Initialize Flask-Migrate
 migrate = Migrate(app, db)
 
-# Initialize login manager with session protection
+# Initialize login manager with better session protection
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
-login_manager.session_protection = "strong"
+login_manager.session_protection = "basic"  # Changed from "strong" to "basic"
 login_manager.remember_cookie_duration = None
+login_manager.login_message = "Please log in to access this page"
+login_manager.login_message_category = "info"
+
+# Initialize Flask-Session after app configuration
+Session(app)
 
 # Security decorator to check if student is currently taking a test
 def check_test_session(f):
@@ -127,7 +135,14 @@ def login():
         user = User.query.filter_by(username=username).first()
         
         if user and user.check_password(password):
-            login_user(user)
+            # Set session as permanent and login user
+            session.permanent = True
+            login_user(user, remember=True, duration=app.config['PERMANENT_SESSION_LIFETIME'])
+            
+            # Clear any stale test sessions from previous logins
+            session.pop('active_test_id', None)
+            session.pop('test_start_time', None)
+            
             return redirect(url_for('dashboard'))
         flash('Invalid username or password')
     
@@ -1133,6 +1148,9 @@ def debug_session():
     
     return {
         'user': current_user.name,
+        'session_id': session.sid,
+        'test_start_time': session.get('test_start_time'),
+        'active_test_id': session.get('active_test_id'),
         'role': current_user.role,
         'active_test_id': session.get('active_test_id'),
         'test_start_time': session.get('test_start_time'),

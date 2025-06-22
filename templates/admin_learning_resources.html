@@ -31,7 +31,223 @@
         .file-size {
             font-size: 0.8rem;
             color: #6c757d;
-        }        /* Mobile responsive styles for link form */
+        }
+
+        /* Modern Delete Modal Styles */
+        .delete-modal .modal-content {
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+
+        .delete-modal .modal-header {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+            color: white;
+            border: none;
+            padding: 2rem 2rem 1rem 2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .delete-modal .modal-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 107, 107, 0.9), rgba(238, 90, 82, 0.9));
+            z-index: -1;
+        }
+
+        .delete-modal .modal-header .btn-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.8;
+            transition: all 0.3s ease;
+        }
+
+        .delete-modal .modal-header .btn-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .delete-modal .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .delete-modal .modal-title i {
+            font-size: 2rem;
+            opacity: 0.9;
+        }
+
+        .delete-modal .modal-body {
+            padding: 2rem;
+            text-align: center;
+            background: white;
+        }
+
+        .delete-modal .modal-body p {
+            font-size: 1.1rem;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+
+        .delete-modal .modal-body .resource-name {
+            font-weight: 700;
+            color: #e74c3c;
+            background: rgba(231, 76, 60, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            display: inline-block;
+            margin: 0.5rem 0;
+        }
+
+        .delete-modal .modal-body .warning-text {
+            color: #7f8c8d;
+            font-size: 0.95rem;
+            font-style: italic;
+            margin-top: 1rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #e74c3c;
+        }
+
+        .delete-modal .modal-footer {
+            background: #f8f9fa;
+            border: none;
+            padding: 1.5rem 2rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .delete-modal .btn-cancel {
+            background: #6c757d;
+            border: none;
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .delete-modal .btn-cancel:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(108, 117, 125, 0.3);
+            color: white;
+        }
+
+        .delete-modal .btn-delete {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            border: none;
+            color: white;
+            padding: 0.75rem 2rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+            min-width: 120px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .delete-modal .btn-delete::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .delete-modal .btn-delete:hover {
+            background: linear-gradient(135deg, #c0392b, #a93226);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(231, 76, 60, 0.4);
+        }
+
+        .delete-modal .btn-delete:hover::before {
+            left: 100%;
+        }
+
+        .delete-modal .btn-delete:active {
+            transform: translateY(0);
+        }
+
+        /* Animation for modal appearance */
+        .delete-modal.fade .modal-dialog {
+            transform: scale(0.8) translateY(-50px);
+            transition: all 0.3s ease;
+        }
+
+        .delete-modal.show .modal-dialog {
+            transform: scale(1) translateY(0);
+        }
+
+        /* Mobile responsive adjustments */
+        @media (max-width: 576px) {
+            .delete-modal .modal-dialog {
+                margin: 1rem;
+                max-width: calc(100% - 2rem);
+            }
+
+            .delete-modal .modal-header {
+                padding: 1.5rem 1.5rem 0.75rem 1.5rem;
+            }
+
+            .delete-modal .modal-title {
+                font-size: 1.25rem;
+            }
+
+            .delete-modal .modal-title i {
+                font-size: 1.5rem;
+            }
+
+            .delete-modal .modal-body {
+                padding: 1.5rem;
+            }
+
+            .delete-modal .modal-body p {
+                font-size: 1rem;
+            }
+
+            .delete-modal .modal-footer {
+                padding: 1rem 1.5rem;
+                flex-direction: column;
+            }
+
+            .delete-modal .btn-cancel,
+            .delete-modal .btn-delete {
+                width: 100%;
+                margin: 0.25rem 0;
+            }
+        }
+
+        /* Mobile responsive styles for link form */
         @media (max-width: 767px) {
             .row.g-3.align-items-end {
                 text-align: center;
@@ -936,21 +1152,55 @@
 
     <!-- Delete Modals -->
     {% for resource in resources %}
-    <div class="modal fade" id="deleteModal{{ resource.id }}" tabindex="-1">
-        <div class="modal-dialog">
+    <div class="modal fade delete-modal" id="deleteModal{{ resource.id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ resource.id }}" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Delete Resource</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    <h5 class="modal-title" id="deleteModalLabel{{ resource.id }}">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Delete Resource
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Are you sure you want to delete "<strong>{{ resource.title }}</strong>"?</p>
-                    <p class="text-muted">This action cannot be undone.</p>
+                    <p>Are you sure you want to delete this learning resource?</p>
+                    <div class="resource-name">{{ resource.title }}</div>
+                    {% if resource.files and resource.files|length > 1 %}
+                    <p class="mt-3 mb-2">This package contains <strong>{{ resource.files|length }} files</strong> that will also be deleted:</p>
+                    <div class="text-start">
+                        {% for file in resource.files[:3] %}
+                        <small class="d-block text-muted">
+                            <i class="fas fa-{{ 'play' if file.file_type == 'video' else 'file-pdf' if file.file_type == 'pdf' else 'file-alt' }} me-1"></i>
+                            {{ file.original_filename }}
+                        </small>
+                        {% endfor %}
+                        {% if resource.files|length > 3 %}
+                        <small class="d-block text-muted">
+                            <i class="fas fa-ellipsis-h me-1"></i>
+                            ... and {{ resource.files|length - 3 }} more file{{ 's' if resource.files|length - 3 != 1 else '' }}
+                        </small>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                    {% if resource.linked_tests %}
+                    <p class="mt-3 mb-2">
+                        <i class="fas fa-unlink me-1 text-warning"></i>
+                        This will also unlink <strong>{{ resource.linked_tests|length }} test{{ 's' if resource.linked_tests|length != 1 else '' }}</strong>
+                    </p>
+                    {% endif %}
+                    <div class="warning-text">
+                        <i class="fas fa-warning me-2"></i>
+                        This action cannot be undone. All files and data will be permanently removed.
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-cancel" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </button>
                     <form method="POST" action="{{ url_for('delete_learning_resource', resource_id=resource.id) }}" class="d-inline">
-                        <button type="submit" class="btn btn-danger">Delete</button>
+                        <button type="submit" class="btn btn-delete">
+                            <i class="fas fa-trash me-2"></i>Delete
+                        </button>
                     </form>
                 </div>
             </div>
