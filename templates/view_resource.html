@@ -948,436 +948,164 @@
         
         // Function to open file in new tab
         function openFileInNewTab(fileUrl) {
-            const newTab = window.open(fileUrl, '_blank');
-            newTab.focus();
-            
-            // Track that user opened in new tab
-            updateProgress(25, false);
+            try {
+                const newTab = window.open(fileUrl, '_blank', 'noopener,noreferrer');
+                if (newTab) {
+                    newTab.focus();
+                    updateProgress(25, false);
+                } else {
+                    // Fallback: create a temporary link and click it
+                    const link = document.createElement('a');
+                    link.href = fileUrl;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }
+            } catch (error) {
+                console.error('Error opening file:', error);
+                // Final fallback: direct navigation
+                window.location.href = fileUrl;
+            }
         }
         
         // Function to open PDF/Document in new tab (backward compatibility)
         function openInNewTab() {
-            const newTab = window.open('{{ url_for("view_resource", resource_id=resource.id, direct=1) }}', '_blank');
-            newTab.focus();
-            
-            // Track that user opened in new tab
-            {% if resource.resource_type in ['pdf', 'document'] %}
-            updateProgress(25, false); // Give some progress for opening
-            {% endif %}
-        }
-        
-        // Video player functionality for multiple videos
-        {% if resource_files %}
-        {% for file in resource_files %}
-        {% if file.file_type == 'video' %}
-        const video_{{ file.id }} = document.getElementById('video-{{ file.id }}');
-        if (video_{{ file.id }}) {
-            // Video progress tracking
-            video_{{ file.id }}.addEventListener('timeupdate', function() {
-                if (this.duration) {
-                    const progress = (this.currentTime / this.duration) * 100;
-                    lastPosition = this.currentTime;
-                    updateProgress(progress, false);
+            const url = '{{ url_for("view_resource", resource_id=resource.id, direct=1) }}';
+            try {
+                const newTab = window.open(url, '_blank', 'noopener,noreferrer');
+                if (newTab) {
+                    newTab.focus();
+                    {% if resource.resource_type in ['pdf', 'document'] %}
+                    updateProgress(25, false);
+                    {% endif %}
+                } else {
+                    // Fallback: create a temporary link and click it
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
                 }
-            });
-            
-            video_{{ file.id }}.addEventListener('ended', function() {
-                updateProgress(100, true);
-            });
-            
-            // Load saved position
-            {% if progress and progress.last_position %}
-            video_{{ file.id }}.addEventListener('loadedmetadata', function() {
-                this.currentTime = {{ progress.last_position }};
-            });
-            {% endif %}
-        }
-        {% endif %}
-        {% endfor %}
-        {% endif %}
-        
-        // Fallback for single video (backward compatibility)
-        {% if resource.resource_type == 'video' and not resource_files %}
-        const video = document.getElementById('video-player');
-        if (video) {
-            // Video progress tracking
-            video.addEventListener('timeupdate', function() {
-                if (video.duration) {
-                    const progress = (video.currentTime / video.duration) * 100;
-                    lastPosition = video.currentTime;
-                    updateProgress(progress, false);
-                }
-            });
-            
-            video.addEventListener('ended', function() {
-                updateProgress(100, true);
-            });
-            
-            // Load saved position
-            {% if progress and progress.last_position %}
-            video.addEventListener('loadedmetadata', function() {
-                video.currentTime = {{ progress.last_position }};
-            });
-            {% endif %}
-        }
-        {% endif %}
-        
-        // For non-video resources, track viewing time
-        {% if resource.resource_type != 'video' or not resource_files or resource_files|selectattr('file_type', 'equalto', 'video')|list|length == 0 %}
-        function trackViewingProgress() {
-            const timeSpent = Math.floor((Date.now() - startTime) / 1000);
-            let progress = Math.min((timeSpent / 300) * 100, 100); // 5 minutes = 100%
-            updateProgress(progress, progress >= 100);
-        }
-        
-        // Track progress every 30 seconds for documents
-        setInterval(trackViewingProgress, 30000);
-        {% endif %}
-        
-        // Update progress function
-        function updateProgress(progressPercentage, completed) {
-            {% if current_user.role == 'student' %}
-            const timeSpent = Math.floor((Date.now() - startTime) / 1000);
-            
-            fetch('{{ url_for("update_progress", resource_id=resource.id) }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    progress: progressPercentage,
-                    position: lastPosition,
-                    time_spent: timeSpent,
-                    completed: completed
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    console.log('Progress updated successfully');
-                }
-            })
-            .catch(error => console.error('Error updating progress:', error));
-            {% endif %}
-        }
-        
-        // Track when user leaves page
-        window.addEventListener('beforeunload', function() {
-            {% if resource.resource_type != 'video' %}
-            trackViewingProgress();
-            {% endif %}
-        });
-        
-        // Mobile-specific enhancements
-        if (window.innerWidth <= 768) {
-            // Auto-hide mobile browser UI when viewing videos in fullscreen
-            {% if resource_files %}
-            {% for file in resource_files %}
-            {% if file.file_type == 'video' %}
-            const video_{{ file.id }}_mobile = document.getElementById('video-{{ file.id }}');
-            if (video_{{ file.id }}_mobile) {
-                video_{{ file.id }}_mobile.addEventListener('fullscreenchange', function() {
-                    if (document.fullscreenElement === this) {
-                        document.body.style.overflow = 'hidden';
-                    } else {
-                        document.body.style.overflow = 'auto';
-                    }
-                });
+            } catch (error) {
+                console.error('Error opening PDF:', error);
+                // Final fallback: direct navigation
+                window.location.href = url;
             }
-            {% endif %}
-            {% endfor %}
-            {% endif %}
         }
-        
-        // Initialize progress tracking for documents
-        {% if resource.resource_type in ['pdf', 'document'] or (resource_files and resource_files|selectattr('file_type', 'in', ['pdf', 'document'])|list|length > 0) %}
-        setTimeout(function() {
-            updateProgress(10, false); // Initial progress for opening
-        }, 5000);
-        {% endif %}
         
         // Enhanced PDF functions for mobile and desktop
         function openPDFInNewTab(pdfUrl, filename) {
             console.log('Opening PDF in new tab:', pdfUrl, 'Filename:', filename);
             
-            // Show loading indicator
-            showLoadingIndicator('Opening PDF...');
-            
             try {
-                // Try to open in new tab with better parameters
-                const newTab = window.open(pdfUrl, '_blank', 'noopener,noreferrer,width=1200,height=800,scrollbars=yes,resizable=yes,toolbar=yes,menubar=yes,location=yes,status=yes');
+                // Try to open in new tab with specific window features
+                const windowFeatures = 'noopener,noreferrer,scrollbars=yes,resizable=yes,status=yes,location=yes,toolbar=yes,menubar=yes';
+                const newTab = window.open(pdfUrl, '_blank', windowFeatures);
                 
                 if (newTab) {
-                    // Success - new tab opened
+                    // Successfully opened in new tab
                     newTab.focus();
                     console.log('PDF opened in new tab successfully');
                     updateProgress(30, false);
-                    hideLoadingIndicator();
-                    showSuccessMessage('PDF opened in new tab successfully!');
                 } else {
-                    // Fallback if popup blocked
-                    console.log('Pop-up blocked, using fallback method');
-                    hideLoadingIndicator();
-                    
-                    // Show user-friendly error with options
-                    showPDFErrorDialog(pdfUrl, filename);
+                    // Popup blocked or failed, use link method
+                    console.log('Window.open failed, using link method');
+                    const link = document.createElement('a');
+                    link.href = pdfUrl;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    updateProgress(30, false);
                 }
                 
             } catch (error) {
                 console.error('Error opening PDF:', error);
-                hideLoadingIndicator();
-                
-                // Show user-friendly error with options
-                showPDFErrorDialog(pdfUrl, filename);
+                // Final fallback - create and click link
+                try {
+                    const link = document.createElement('a');
+                    link.href = pdfUrl;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    link.download = filename || 'document.pdf';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } catch (linkError) {
+                    console.error('Link fallback failed:', linkError);
+                    // Last resort - direct navigation
+                    window.location.href = pdfUrl;
+                }
             }
         }
         
         function downloadPDF(pdfUrl, filename) {
             console.log('Downloading PDF:', pdfUrl, 'as', filename);
             
-            // Show loading indicator
-            showLoadingIndicator('Preparing download...');
-            
             try {
-                // Use fetch to get the PDF and force download
-                if ('fetch' in window) {
-                    fetch(pdfUrl)
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error('Network response was not ok');
-                            }
-                            return response.blob();
-                        })
-                        .then(blob => {
-                            const url = window.URL.createObjectURL(blob);
-                            const link = document.createElement('a');
-                            link.href = url;
-                            link.download = filename || 'document.pdf';
-                            link.style.display = 'none';
-                            
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
-                            
-                            // Clean up the blob URL
-                            window.URL.revokeObjectURL(url);
-                            
-                            updateProgress(25, false);
-                            hideLoadingIndicator();
-                            showSuccessMessage('Download started! Check your downloads folder.');
-                        })
-                        .catch(error => {
-                            console.error('Fetch download failed:', error);
-                            hideLoadingIndicator();
-                            fallbackDownload(pdfUrl, filename);
-                        });
-                } else {
-                    // Fallback for older browsers
-                    hideLoadingIndicator();
-                    fallbackDownload(pdfUrl, filename);
-                }
-            } catch (error) {
-                console.error('Download error:', error);
-                hideLoadingIndicator();
-                fallbackDownload(pdfUrl, filename);
-            }
-        }
-        
-        function fallbackDownload(pdfUrl, filename) {
-            console.log('Using fallback download method');
-            showLoadingIndicator('Using fallback download...');
-            
-            try {
-                // Create a more robust download mechanism
+                // Create download link
                 const link = document.createElement('a');
                 link.href = pdfUrl;
                 link.download = filename || 'document.pdf';
                 link.target = '_blank';
                 link.rel = 'noopener noreferrer';
-                
-                // Try multiple approaches
                 link.style.display = 'none';
+                
                 document.body.appendChild(link);
-                
-                // Method 1: Direct click
                 link.click();
-                
-                // Method 2: Dispatch event
-                const clickEvent = new MouseEvent('click', {
-                    bubbles: true,
-                    cancelable: true,
-                    view: window
-                });
-                link.dispatchEvent(clickEvent);
-                
-                // Clean up
-                setTimeout(() => {
-                    if (document.body.contains(link)) {
-                        document.body.removeChild(link);
-                    }
-                }, 1000);
+                document.body.removeChild(link);
                 
                 updateProgress(25, false);
-                hideLoadingIndicator();
-                showSuccessMessage('Download initiated! If download doesn\'t start, try right-clicking the PDF and selecting "Save As".');
                 
             } catch (error) {
-                console.error('Fallback download failed:', error);
-                hideLoadingIndicator();
-                showErrorMessage('Download failed. Please try opening the PDF in a new tab and saving it manually.');
+                console.error('Download error:', error);
+                // Fallback - open in new tab instead
+                openPDFInNewTab(pdfUrl, filename);
             }
-        }
-
-        // Enhanced utility functions for better user experience
-        function showLoadingIndicator(message) {
-            // Remove existing indicator
-            hideLoadingIndicator();
-            
-            const indicator = document.createElement('div');
-            indicator.id = 'pdf-loading-indicator';
-            indicator.innerHTML = `
-                <div class="alert alert-info d-flex align-items-center" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 250px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-                    <div class="spinner-border spinner-border-sm me-2" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <span>${message}</span>
-                </div>
-            `;
-            document.body.appendChild(indicator);
-        }
-        
-        function hideLoadingIndicator() {
-            const indicator = document.getElementById('pdf-loading-indicator');
-            if (indicator) {
-                indicator.remove();
-            }
-        }
-        
-        function showSuccessMessage(message) {
-            showTemporaryMessage(message, 'success');
-        }
-        
-        function showErrorMessage(message) {
-            showTemporaryMessage(message, 'danger');
-        }
-        
-        function showTemporaryMessage(message, type) {
-            const messageDiv = document.createElement('div');
-            messageDiv.innerHTML = `
-                <div class="alert alert-${type} alert-dismissible fade show" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
-                    ${message}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            `;
-            document.body.appendChild(messageDiv);
-            
-            // Auto-remove after 5 seconds
-            setTimeout(() => {
-                if (document.body.contains(messageDiv)) {
-                    messageDiv.remove();
-                }
-            }, 5000);
-        }
-        
-        function showPDFErrorDialog(pdfUrl, filename) {
-            const modal = document.createElement('div');
-            modal.innerHTML = `
-                <div class="modal fade" id="pdfErrorModal" tabindex="-1" data-bs-backdrop="static">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header bg-warning text-dark">
-                                <h5 class="modal-title">
-                                    <i class="fas fa-exclamation-triangle me-2"></i>PDF Access Issue
-                                </h5>
-                            </div>
-                            <div class="modal-body">
-                                <p>We're having trouble opening the PDF in a new tab. This might be due to:</p>
-                                <ul>
-                                    <li>Pop-up blocker settings</li>
-                                    <li>Mobile browser limitations</li>
-                                    <li>Network connectivity issues</li>
-                                </ul>
-                                <p><strong>Choose an option below:</strong></p>
-                            </div>
-                            <div class="modal-footer d-flex flex-column gap-2">
-                                <button type="button" class="btn btn-primary w-100" onclick="directNavigateToPDF('${pdfUrl}')">
-                                    <i class="fas fa-external-link-alt me-2"></i>Open PDF (Current Tab)
-                                </button>
-                                <button type="button" class="btn btn-secondary w-100" onclick="forceDownloadPDF('${pdfUrl}', '${filename}')">
-                                    <i class="fas fa-download me-2"></i>Force Download
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary w-100" data-bs-dismiss="modal">
-                                    <i class="fas fa-times me-2"></i>Cancel
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            const bootstrapModal = new bootstrap.Modal(document.getElementById('pdfErrorModal'));
-            bootstrapModal.show();
-            
-            // Clean up modal when hidden
-            document.getElementById('pdfErrorModal').addEventListener('hidden.bs.modal', function() {
-                modal.remove();
-            });
-        }
-        
-        function directNavigateToPDF(pdfUrl) {
-            window.location.href = pdfUrl;
-        }
-        
-        function forceDownloadPDF(pdfUrl, filename) {
-            // Close modal first
-            const modal = bootstrap.Modal.getInstance(document.getElementById('pdfErrorModal'));
-            if (modal) modal.hide();
-            
-            // Force download using fetch and blob
-            showLoadingIndicator('Forcing download...');
-            
-            fetch(pdfUrl)
-                .then(response => response.blob())
-                .then(blob => {
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = filename || 'document.pdf';
-                    link.click();
-                    window.URL.revokeObjectURL(url);
-                    
-                    showSuccessMessage('Download forced successfully!');
-                    updateProgress(30, false);
-                })
-                .catch(error => {
-                    console.error('Force download failed:', error);
-                    showErrorMessage('Force download failed. Please try a different browser or contact support.');
-                })
-                .finally(() => {
-                    hideLoadingIndicator();
-                });
         }
 
         // Enhanced button click handlers with better error handling
         document.addEventListener('DOMContentLoaded', function() {
             console.log('DOM Content Loaded - Initializing PDF functionality');
             
-            // Initialize all PDF buttons with enhanced functionality
+            // Initialize all PDF buttons
             initializePDFButtons();
             
-            // Add touch-friendly behavior for mobile controls
-            enhanceMobileControls();
-            
-            // Check browser PDF support
-            checkPDFSupport();
+            // Add click event listeners for mobile controls
+            const mobileControls = document.querySelectorAll('.pdf-mobile-controls .btn');
+            mobileControls.forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const isDownload = this.innerHTML.includes('fa-download');
+                    const parentCard = this.closest('.file-card') || this.closest('.card');
+                    
+                    if (parentCard) {
+                        const iframe = parentCard.querySelector('iframe');
+                        if (iframe && iframe.src) {
+                            if (isDownload) {
+                                downloadPDF(iframe.src, 'document.pdf');
+                            } else {
+                                openPDFInNewTab(iframe.src, 'document.pdf');
+                            }
+                        }
+                    }
+                });
+            });
         });
         
         function initializePDFButtons() {
             console.log('Initializing PDF buttons');
             
             // Get all buttons with PDF functionality
-            const allPDFButtons = document.querySelectorAll('button[onclick*="openPDFInNewTab"], button[onclick*="downloadPDF"]');
+            const allPDFButtons = document.querySelectorAll('button[onclick*="openPDFInNewTab"], button[onclick*="downloadPDF"], .open-new-tab-btn');
             console.log('Found', allPDFButtons.length, 'PDF buttons');
             
             allPDFButtons.forEach((btn, index) => {
@@ -1395,35 +1123,47 @@
                     
                     console.log('Button clicked, processing:', onclickAttr);
                     
-                    // Parse the function call more reliably
+                    if (!onclickAttr) {
+                        // Handle buttons without onclick (like .open-new-tab-btn)
+                        const parentCard = this.closest('.file-card') || this.closest('.card');
+                        if (parentCard) {
+                            const iframe = parentCard.querySelector('iframe');
+                            if (iframe && iframe.src) {
+                                openPDFInNewTab(iframe.src, 'document.pdf');
+                            }
+                        }
+                        return;
+                    }
+                    
+                    // Parse the function call
                     if (onclickAttr.includes('openPDFInNewTab')) {
-                        // Match both single and double quotes
                         const match = onclickAttr.match(/openPDFInNewTab\(([^)]+)\)/);
                         if (match) {
-                            // Parse the arguments more carefully
                             const args = match[1].split(',').map(arg => arg.trim().replace(/^['"]|['"]$/g, ''));
                             const pdfUrl = args[0];
                             const filename = args[1] || 'document.pdf';
                             console.log('Opening PDF:', pdfUrl, 'Filename:', filename);
                             openPDFInNewTab(pdfUrl, filename);
-                        } else {
-                            console.error('Could not parse openPDFInNewTab arguments');
-                            showErrorMessage('Error: Could not process PDF opening request.');
                         }
                     } else if (onclickAttr.includes('downloadPDF')) {
-                        // Match both single and double quotes
                         const match = onclickAttr.match(/downloadPDF\(([^)]+)\)/);
                         if (match) {
-                            // Parse the arguments more carefully
                             const args = match[1].split(',').map(arg => arg.trim().replace(/^['"]|['"]$/g, ''));
                             const pdfUrl = args[0];
                             const filename = args[1] || 'document.pdf';
                             console.log('Downloading PDF:', pdfUrl, 'Filename:', filename);
                             downloadPDF(pdfUrl, filename);
-                        } else {
-                            console.error('Could not parse downloadPDF arguments');
-                            showErrorMessage('Error: Could not process PDF download request.');
                         }
+                    } else if (onclickAttr.includes('openFileInNewTab')) {
+                        const match = onclickAttr.match(/openFileInNewTab\(([^)]+)\)/);
+                        if (match) {
+                            const fileUrl = match[1].trim().replace(/^['"]|['"]$/g, '');
+                            console.log('Opening file:', fileUrl);
+                            openFileInNewTab(fileUrl);
+                        }
+                    } else if (onclickAttr.includes('openInNewTab')) {
+                        console.log('Opening resource in new tab');
+                        openInNewTab();
                     }
                 });
             });

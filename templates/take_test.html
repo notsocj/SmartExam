@@ -298,7 +298,9 @@
             testForm.addEventListener('submit', function(e) {
                 clearInterval(timerInterval);
             });
-              window.addEventListener('beforeunload', function(e) {
+              
+            // Enhanced security measures
+            window.addEventListener('beforeunload', function(e) {
                 const confirmationMessage = 'If you leave this page, your test progress will be lost.';
                 e.returnValue = confirmationMessage;
                 return confirmationMessage;
@@ -313,6 +315,77 @@
             
             // Add an initial state to the history
             window.history.pushState(null, null, window.location.pathname);
+
+            // Block common key combinations that could be used to navigate away
+            document.addEventListener('keydown', function(e) {
+                // Prevent Alt+Left/Right (back/forward)
+                if (e.altKey && (e.keyCode === 37 || e.keyCode === 39)) {
+                    e.preventDefault();
+                    alert('Navigation is disabled during the test.');
+                    return false;
+                }
+                
+                // Prevent Ctrl+R (refresh) and F5 (refresh)
+                if ((e.ctrlKey && e.keyCode === 82) || e.keyCode === 116) {
+                    e.preventDefault();
+                    alert('Page refresh is disabled during the test.');
+                    return false;
+                }
+                
+                // Prevent Ctrl+W (close tab)
+                if (e.ctrlKey && e.keyCode === 87) {
+                    e.preventDefault();
+                    alert('Closing the tab is disabled during the test.');
+                    return false;
+                }
+                
+                // Prevent Ctrl+T (new tab)
+                if (e.ctrlKey && e.keyCode === 84) {
+                    e.preventDefault();
+                    alert('Opening new tabs is disabled during the test.');
+                    return false;
+                }
+            });
+
+            // Prevent right-click context menu
+            document.addEventListener('contextmenu', function(e) {
+                e.preventDefault();
+                alert('Right-click is disabled during the test.');
+                return false;
+            });
+
+            // Monitor focus changes (when user switches tabs/windows)
+            let isTabActive = true;
+            let focusWarningShown = false;
+            
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden) {
+                    isTabActive = false;
+                    if (!focusWarningShown) {
+                        focusWarningShown = true;
+                        // Show warning when returning to the tab
+                        setTimeout(function() {
+                            if (!isTabActive) {
+                                alert('Warning: Switching tabs during a test may be considered suspicious behavior.');
+                            }
+                        }, 100);
+                    }
+                } else {
+                    isTabActive = true;
+                }
+            });
+
+            window.addEventListener('blur', function() {
+                isTabActive = false;
+            });
+
+            window.addEventListener('focus', function() {
+                isTabActive = true;
+                if (!focusWarningShown) {
+                    focusWarningShown = true;
+                    alert('Warning: Switching windows during a test may be considered suspicious behavior.');
+                }
+            });
 
             // Add hover effects for multiple choice options
             document.querySelectorAll('.form-check').forEach(check => {

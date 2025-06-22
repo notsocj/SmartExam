@@ -973,7 +973,7 @@ def delete_learning_resource(resource_id):
 
 @app.route('/view_resource/<int:resource_id>')
 @login_required
-@check_test_session
+@check_test_session  # Add this decorator to prevent access during tests
 def view_resource(resource_id):
     resource = LearningResource.query.get_or_404(resource_id)
     
@@ -1032,6 +1032,7 @@ def view_resource(resource_id):
 
 @app.route('/update_progress/<int:resource_id>', methods=['POST'])
 @login_required
+@check_test_session  # Add this decorator to prevent progress updates during tests
 def update_progress(resource_id):
     if current_user.role != 'student':
         return jsonify({'success': False, 'message': 'Only students can update progress'})
@@ -1105,6 +1106,7 @@ def unlink_test_from_resource(test_id):
 
 @app.route('/resource_file/<path:filename>')
 @login_required
+@check_test_session  # Add this decorator to prevent direct file access during tests
 def resource_file(filename):
     # Serve files from the learning resources folder
     return send_from_directory(app.config['LEARNING_RESOURCES_FOLDER'], filename)
