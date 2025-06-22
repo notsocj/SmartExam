@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 
 # Base directory of the application
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -23,7 +24,7 @@ class Config:
     SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
     SESSION_COOKIE_SAMESITE = 'Lax'
     SESSION_COOKIE_NAME = 'smartexam_session'
-    PERMANENT_SESSION_LIFETIME = 86400  # 24 hours
+    PERMANENT_SESSION_LIFETIME = timedelta(hours=24).total_seconds()  # 24 hours in seconds
     
     # File upload settings
     UPLOAD_FOLDER = os.path.join(basedir, 'static', 'uploads')

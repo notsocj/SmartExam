@@ -25,7 +25,7 @@ from flask_session import Session
 from functools import wraps
 from models import db, User, Result, Question, Test, LearningResource, StudentProgress, ResourceFile
 from config import config
-from datetime import datetime
+from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 from concurrent.futures import ThreadPoolExecutor
 import os
@@ -137,7 +137,7 @@ def login():
         if user and user.check_password(password):
             # Set session as permanent and login user
             session.permanent = True
-            login_user(user, remember=True, duration=app.config['PERMANENT_SESSION_LIFETIME'])
+            login_user(user, remember=True, duration=timedelta(seconds=app.config['PERMANENT_SESSION_LIFETIME']))
             
             # Clear any stale test sessions from previous logins
             session.pop('active_test_id', None)
