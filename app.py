@@ -652,6 +652,14 @@ def take_test(test_id):
     # Set active test session to prevent access to resources
     session['active_test_id'] = test_id
     session['test_start_time'] = datetime.utcnow().isoformat()
+    session['security_violations'] = 0
+    session['tab_switches'] = 0
+    session['fullscreen_exits'] = 0
+    session['security_log'] = []
+    session.permanent = True
+    
+    # Log test start
+    app.logger.info(f'Test started: User {current_user.id} ({current_user.name}) started test {test_id} ({test.title})')
     
     return render_template('take_test.html', test=test)
 
@@ -669,6 +677,11 @@ def submit_test(test_id):
     existing_result = Result.query.filter_by(user_id=current_user.id, test_id=test_id).first()
     if existing_result:
         flash('You have already taken this test')
+        return redirect(url_for('available_tests'))
+    
+    # Verify this matches the active test session
+    if session.get('active_test_id') != test_id:
+        flash('Invalid test session. Please start the test again.')
         return redirect(url_for('available_tests'))
     
     # Process the test submission
@@ -713,6 +726,20 @@ def submit_test(test_id):
     # Calculate percentage score
     score = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
     
+    # Get security information from session
+    security_violations = session.get('security_violations', 0)
+    tab_switches = session.get('tab_switches', 0)
+    fullscreen_exits = session.get('fullscreen_exits', 0)
+    security_log = session.get('security_log', [])
+    
+    # Add security information to result data
+    result_data['security_info'] = {
+        'violations': security_violations,
+        'tab_switches': tab_switches,
+        'fullscreen_exits': fullscreen_exits,
+        'security_log': security_log[:10]  # Store only last 10 entries
+    }
+    
     # Create result record
     result = Result(
         user_id=current_user.id,
@@ -724,9 +751,18 @@ def submit_test(test_id):
     db.session.add(result)
     db.session.commit()
     
+    # Log test completion with security info
+    app.logger.info(f'Test completed: User {current_user.id} ({current_user.name}) completed test {test_id} with score {score:.1f}%. Security violations: {security_violations}, Tab switches: {tab_switches}, Fullscreen exits: {fullscreen_exits}')
+    
     # Clear active test session after submission
     session.pop('active_test_id', None)
     session.pop('test_start_time', None)
+    session.pop('last_heartbeat', None)
+    session.pop('security_violations', None)
+    session.pop('tab_switches', None)
+    session.pop('fullscreen_exits', None)
+    session.pop('security_log', None)
+    session.permanent = True
     
     # Redirect to result page
     flash(f'Test submitted successfully. Your score: {score:.1f}%')
@@ -1158,3 +1194,121 @@ def debug_session():
         'test_start_time': session.get('test_start_time'),
         'session_keys': list(session.keys())
     }
+
+@app.route('/test_heartbeat', methods=['POST'])
+@login_required
+def test_heartbeat():
+    """Handle test session heartbeat to monitor if student is still active"""
+    if current_user.role != 'student':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    # Check if student has an active test session
+    if 'active_test_id' not in session:
+        return jsonify({'error': 'No active test session'}), 400
+    
+    try:
+        data = request.get_json()
+        test_id = data.get('test_id')
+        timestamp = data.get('timestamp')
+        security_violations = data.get('security_violations', 0)
+        tab_switches = data.get('tab_switches', 0)
+        fullscreen_exits = data.get('fullscreen_exits', 0)
+        
+        # Verify the test_id matches the active session
+        if test_id != session['active_test_id']:
+            return jsonify({'error': 'Test ID mismatch'}), 400
+        
+        # Update session with latest heartbeat
+        session['last_heartbeat'] = timestamp
+        session['security_violations'] = security_violations
+        session['tab_switches'] = tab_switches
+        session['fullscreen_exits'] = fullscreen_exits
+        session.permanent = True
+        
+        # Log security issues if any
+        if security_violations > 0:
+            app.logger.warning(f'Security violations detected for user {current_user.id} in test {test_id}: {security_violations} violations, {tab_switches} tab switches, {fullscreen_exits} fullscreen exits')
+        
+        return jsonify({'status': 'success', 'timestamp': timestamp})
+        
+    except Exception as e:
+        app.logger.error(f'Heartbeat error for user {current_user.id}: {str(e)}')
+        return jsonify({'error': 'Server error'}), 500
+
+@app.route('/record_security_violation', methods=['POST'])
+@login_required
+def record_security_violation():
+    """Record security violations during test"""
+    if current_user.role != 'student':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    # Check if student has an active test session
+    if 'active_test_id' not in session:
+        return jsonify({'error': 'No active test session'}), 400
+    
+    try:
+        data = request.get_json()
+        test_id = data.get('test_id')
+        violation_type = data.get('violation_type')
+        timestamp = data.get('timestamp')
+        total_violations = data.get('total_violations', 0)
+        
+        # Verify the test_id matches the active session
+        if test_id != session['active_test_id']:
+            return jsonify({'error': 'Test ID mismatch'}), 400
+        
+        # Log the violation
+        app.logger.warning(f'Security violation: User {current_user.id} ({current_user.name}) in test {test_id} - {violation_type} at {timestamp}. Total violations: {total_violations}')
+        
+        # Store violations in session
+        if 'security_log' not in session:
+            session['security_log'] = []
+        
+        session['security_log'].append({
+            'type': violation_type,
+            'timestamp': timestamp,
+            'test_id': test_id
+        })
+        
+        # Limit log size to prevent session bloat
+        if len(session['security_log']) > 100:
+            session['security_log'] = session['security_log'][-100:]
+        
+        session.permanent = True
+        
+        return jsonify({'status': 'recorded'})
+        
+    except Exception as e:
+        app.logger.error(f'Security violation recording error for user {current_user.id}: {str(e)}')
+        return jsonify({'error': 'Server error'}), 500
+
+@app.route('/test_abandoned', methods=['POST'])
+@login_required
+def test_abandoned():
+    """Handle test abandonment (when student closes browser/tab)"""
+    if current_user.role != 'student':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    try:
+        # This is called via sendBeacon, so data might be in request.data
+        data = request.get_json() or {}
+        test_id = data.get('test_id')
+        timestamp = data.get('timestamp')
+        violations = data.get('violations', 0)
+        
+        # Log the abandonment
+        app.logger.warning(f'TEST ABANDONED: User {current_user.id} ({current_user.name}) abandoned test {test_id} at {timestamp} with {violations} security violations')
+        
+        # Clear the test session
+        session.pop('active_test_id', None)
+        session.pop('test_start_time', None)
+        session.pop('last_heartbeat', None)
+        session.pop('security_violations', None)
+        session.pop('security_log', None)
+        session.permanent = True
+        
+        return '', 204  # No content response for sendBeacon
+        
+    except Exception as e:
+        app.logger.error(f'Test abandonment handling error: {str(e)}')
+        return '', 500

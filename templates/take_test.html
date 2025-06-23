@@ -62,12 +62,73 @@
             line-height: 1 !important;
         }
         
+        /* Security status indicator */
+        .security-status {
+            position: fixed;
+            top: 140px;
+            right: 20px;
+            z-index: 1001;
+            max-width: 200px;
+        }
+        
+        .security-indicator {
+            font-size: 0.75rem;
+            padding: 0.5rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .security-active {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .security-warning {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+        
+        .security-danger {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f1c0c7;
+        }
+        
+        /* Fullscreen mode styles */
+        body.test-fullscreen {
+            overflow: hidden;
+        }
+        
+        .fullscreen-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 9999;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+        }
+        
         @media (max-width: 768px) {
             .timer-container {
                 position: relative;
                 top: auto;
                 right: auto;
                 margin-bottom: 20px;
+            }
+            .security-status {
+                position: relative;
+                top: auto;
+                right: auto;
+                margin-bottom: 20px;
+                max-width: none;
             }
             .main-content {
                 padding-top: 20px;
@@ -79,19 +140,32 @@
     </style>
 </head>
 <body class="bg-light">
+    <!-- Fullscreen enforcement overlay -->
+    <div id="fullscreen-overlay" class="fullscreen-overlay">
+        <div>
+            <h2><i class="fas fa-exclamation-triangle mb-3"></i></h2>
+            <h3>Test Security Alert</h3>
+            <p>You have exited fullscreen mode. Click below to return to the test.</p>
+            <button id="return-fullscreen" class="btn btn-warning btn-lg">
+                <i class="fas fa-expand me-2"></i>Return to Test
+            </button>
+        </div>
+    </div>
+
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top shadow">
         <div class="container-fluid px-3 px-lg-5">
-            <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+            <a class="navbar-brand" href="#" onclick="return false;">
                 <i class="fas fa-graduation-cap me-2"></i>SmartExaM
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
-            </button>            <div class="collapse navbar-collapse" id="navbarNav">
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
                         <span class="nav-link text-warning">
-                            <i class="fas fa-exclamation-triangle me-1"></i>Test in Progress - Navigation Restricted
+                            <i class="fas fa-shield-alt me-1"></i>Secure Test Mode Active
                         </span>
                     </li>
                 </ul>
@@ -112,9 +186,27 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Mobile Security Status -->
+                <div class="d-lg-none mb-3">
+                    <div class="row">
+                        <div class="col-6">
+                            <div id="mobile-security-status" class="security-indicator security-active text-center">
+                                <i class="fas fa-shield-alt me-1"></i>
+                                <span id="mobile-security-text">Secure</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div id="mobile-heartbeat-status" class="security-indicator security-active text-center">
+                                <i class="fas fa-heartbeat me-1"></i>
+                                <span>Connected</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Desktop Timer -->
+            <!-- Desktop Timer and Security Status -->
             <div id="timer-container" class="timer-container d-none d-lg-block">
                 <div id="timer-card" class="card timer-card shadow">
                     <div class="card-body py-3 px-4">
@@ -124,6 +216,18 @@
                             <div id="timer" class="fw-bold fs-5 text-primary">--:--</div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Desktop Security Status -->
+            <div id="security-status" class="security-status d-none d-lg-block">
+                <div id="security-indicator" class="security-indicator security-active">
+                    <i class="fas fa-shield-alt me-1"></i>
+                    <span id="security-text">Secure Mode</span>
+                </div>
+                <div id="heartbeat-status" class="security-indicator security-active">
+                    <i class="fas fa-heartbeat me-1"></i>
+                    <span>Connected</span>
                 </div>
             </div>
 
@@ -244,10 +348,11 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Timer Script -->
+    <!-- Enhanced Security Script -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const timeLimit = {{ test.time_limit }};
+            const testId = {{ test.id }};
             const endTime = new Date(new Date().getTime() + timeLimit * 60 * 1000);
             const timerElement = document.getElementById('timer');
             const mobileTimerElement = document.getElementById('mobile-timer');
@@ -255,14 +360,371 @@
             const mobileTimerCard = document.getElementById('mobile-timer-card');
             const testForm = document.getElementById('test-form');
             
+            // Security state tracking
+            let securityViolations = 0;
+            let isTestActive = true;
+            let heartbeatInterval;
+            let securityCheckInterval;
+            let lastHeartbeat = Date.now();
+            let tabSwitchCount = 0;
+            let fullscreenExitCount = 0;
+            
+            // Security status elements
+            const securityIndicator = document.getElementById('security-indicator');
+            const securityText = document.getElementById('security-text');
+            const heartbeatStatus = document.getElementById('heartbeat-status');
+            const mobileSecurityStatus = document.getElementById('mobile-security-status');
+            const mobileSecurityText = document.getElementById('mobile-security-text');
+            const mobileHeartbeatStatus = document.getElementById('mobile-heartbeat-status');
+            const fullscreenOverlay = document.getElementById('fullscreen-overlay');
+            const returnFullscreenBtn = document.getElementById('return-fullscreen');
+            
+            // Initialize security
+            initializeSecurity();
+            
+            function initializeSecurity() {
+                // Force fullscreen mode on desktop
+                if (window.innerWidth > 768) {
+                    requestFullscreen();
+                }
+                
+                // Start heartbeat
+                startHeartbeat();
+                
+                // Start security monitoring
+                startSecurityMonitoring();
+                
+                // Prevent all navigation
+                preventNavigation();
+                
+                // Monitor page visibility
+                monitorPageVisibility();
+                
+                // Monitor fullscreen state
+                monitorFullscreen();
+            }
+            
+            function requestFullscreen() {
+                const elem = document.documentElement;
+                if (elem.requestFullscreen) {
+                    elem.requestFullscreen().catch(err => {
+                        console.log('Fullscreen not supported or denied');
+                        updateSecurityStatus('warning', 'Fullscreen Recommended');
+                    });
+                } else if (elem.webkitRequestFullscreen) {
+                    elem.webkitRequestFullscreen();
+                } else if (elem.msRequestFullscreen) {
+                    elem.msRequestFullscreen();
+                }
+            }
+            
+            function startHeartbeat() {
+                // Send heartbeat every 30 seconds
+                heartbeatInterval = setInterval(() => {
+                    sendHeartbeat();
+                }, 30000);
+                
+                // Send initial heartbeat
+                sendHeartbeat();
+            }
+            
+            function sendHeartbeat() {
+                if (!isTestActive) return;
+                
+                fetch('/test_heartbeat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        test_id: testId,
+                        timestamp: Date.now(),
+                        security_violations: securityViolations,
+                        tab_switches: tabSwitchCount,
+                        fullscreen_exits: fullscreenExitCount
+                    })
+                }).then(response => {
+                    if (response.ok) {
+                        lastHeartbeat = Date.now();
+                        updateHeartbeatStatus('active');
+                    } else {
+                        updateHeartbeatStatus('warning');
+                    }
+                }).catch(error => {
+                    console.error('Heartbeat failed:', error);
+                    updateHeartbeatStatus('danger');
+                });
+            }
+            
+            function startSecurityMonitoring() {
+                securityCheckInterval = setInterval(() => {
+                    // Check if heartbeat is stale
+                    if (Date.now() - lastHeartbeat > 60000) {
+                        updateHeartbeatStatus('danger');
+                    }
+                }, 10000);
+            }
+            
+            function preventNavigation() {
+                // Enhanced beforeunload handler
+                window.addEventListener('beforeunload', function(e) {
+                    if (isTestActive) {
+                        recordSecurityViolation('attempted_exit');
+                        const message = 'WARNING: Leaving this page will abandon your test and may result in a zero score. Are you sure you want to leave?';
+                        e.preventDefault();
+                        e.returnValue = message;
+                        return message;
+                    }
+                });
+                
+                // Prevent back/forward navigation
+                window.addEventListener('popstate', function(event) {
+                    if (isTestActive) {
+                        recordSecurityViolation('navigation_attempt');
+                        window.history.pushState(null, null, window.location.pathname);
+                        showSecurityAlert('Navigation is disabled during the test!');
+                    }
+                });
+                
+                // Add multiple history entries to make back button ineffective
+                for (let i = 0; i < 10; i++) {
+                    window.history.pushState(null, null, window.location.pathname);
+                }
+                
+                // Comprehensive keyboard blocking
+                document.addEventListener('keydown', function(e) {
+                    if (!isTestActive) return;
+                    
+                    const blockedKeys = [
+                        // Navigation keys
+                        { key: 'F5', code: 116, message: 'Page refresh is disabled' },
+                        { key: 'Ctrl+R', ctrl: true, code: 82, message: 'Page refresh is disabled' },
+                        { key: 'Ctrl+F5', ctrl: true, code: 116, message: 'Hard refresh is disabled' },
+                        { key: 'Alt+Left', alt: true, code: 37, message: 'Navigation is disabled' },
+                        { key: 'Alt+Right', alt: true, code: 39, message: 'Navigation is disabled' },
+                        { key: 'Ctrl+W', ctrl: true, code: 87, message: 'Closing tab is disabled' },
+                        { key: 'Ctrl+T', ctrl: true, code: 84, message: 'New tab is disabled' },
+                        { key: 'Ctrl+N', ctrl: true, code: 78, message: 'New window is disabled' },
+                        { key: 'Ctrl+Shift+N', ctrl: true, shift: true, code: 78, message: 'Incognito mode is disabled' },
+                        { key: 'Ctrl+Shift+T', ctrl: true, shift: true, code: 84, message: 'Reopening tabs is disabled' },
+                        { key: 'Ctrl+L', ctrl: true, code: 76, message: 'Address bar access is disabled' },
+                        { key: 'Ctrl+D', ctrl: true, code: 68, message: 'Bookmarking is disabled' },
+                        { key: 'F11', code: 122, message: 'Fullscreen toggle is disabled' },
+                        { key: 'Escape', code: 27, message: 'Escape key is disabled' },
+                        { key: 'Alt+Tab', alt: true, code: 9, message: 'Task switching is disabled' },
+                        { key: 'Ctrl+Alt+Del', ctrl: true, alt: true, code: 46, message: 'System commands are disabled' },
+                        { key: 'Ctrl+Shift+Esc', ctrl: true, shift: true, code: 27, message: 'Task manager is disabled' },
+                        // Developer tools
+                        { key: 'F12', code: 123, message: 'Developer tools are disabled' },
+                        { key: 'Ctrl+Shift+I', ctrl: true, shift: true, code: 73, message: 'Developer tools are disabled' },
+                        { key: 'Ctrl+Shift+J', ctrl: true, shift: true, code: 74, message: 'Console is disabled' },
+                        { key: 'Ctrl+U', ctrl: true, code: 85, message: 'View source is disabled' },
+                    ];
+                    
+                    for (let blocked of blockedKeys) {
+                        if (e.keyCode === blocked.code || e.which === blocked.code) {
+                            if ((!blocked.ctrl || e.ctrlKey) && 
+                                (!blocked.alt || e.altKey) && 
+                                (!blocked.shift || e.shiftKey)) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                recordSecurityViolation(`keyboard_${blocked.key}`);
+                                showSecurityAlert(blocked.message);
+                                return false;
+                            }
+                        }
+                    }
+                });
+                
+                // Block mouse actions
+                document.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    recordSecurityViolation('right_click');
+                    showSecurityAlert('Right-click is disabled during the test');
+                    return false;
+                });
+                
+                // Block drag and drop
+                document.addEventListener('dragstart', function(e) {
+                    e.preventDefault();
+                    return false;
+                });
+                
+                // Block text selection on non-form elements
+                document.addEventListener('selectstart', function(e) {
+                    if (!e.target.matches('input, textarea')) {
+                        e.preventDefault();
+                        return false;
+                    }
+                });
+            }
+            
+            function monitorPageVisibility() {
+                let tabSwitchStart = null;
+                
+                document.addEventListener('visibilitychange', function() {
+                    if (!isTestActive) return;
+                    
+                    if (document.hidden) {
+                        tabSwitchStart = Date.now();
+                        tabSwitchCount++;
+                        recordSecurityViolation('tab_switch');
+                        updateSecurityStatus('danger', 'Tab Switch Detected');
+                    } else {
+                        if (tabSwitchStart) {
+                            const switchDuration = Date.now() - tabSwitchStart;
+                            console.log(`Tab was hidden for ${switchDuration}ms`);
+                            
+                            showSecurityAlert(`WARNING: Tab switching detected! This may affect your test score. Switch count: ${tabSwitchCount}`);
+                            
+                            // Reset to warning after 5 seconds
+                            setTimeout(() => {
+                                updateSecurityStatus('warning', 'Security Alert');
+                            }, 5000);
+                        }
+                    }
+                });
+                
+                // Window focus/blur events
+                window.addEventListener('blur', function() {
+                    if (!isTestActive) return;
+                    recordSecurityViolation('window_blur');
+                    updateSecurityStatus('warning', 'Focus Lost');
+                });
+                
+                window.addEventListener('focus', function() {
+                    if (!isTestActive) return;
+                    setTimeout(() => {
+                        updateSecurityStatus('active', 'Secure Mode');
+                    }, 2000);
+                });
+            }
+            
+            function monitorFullscreen() {
+                document.addEventListener('fullscreenchange', function() {
+                    if (!isTestActive) return;
+                    
+                    if (!document.fullscreenElement) {
+                        fullscreenExitCount++;
+                        recordSecurityViolation('fullscreen_exit');
+                        
+                        if (window.innerWidth > 768) {
+                            // Show overlay to force return to fullscreen
+                            fullscreenOverlay.style.display = 'flex';
+                            updateSecurityStatus('danger', 'Fullscreen Required');
+                        }
+                    } else {
+                        fullscreenOverlay.style.display = 'none';
+                        updateSecurityStatus('active', 'Secure Mode');
+                    }
+                });
+            }
+            
+            function recordSecurityViolation(type) {
+                securityViolations++;
+                console.log(`Security violation: ${type} (Total: ${securityViolations})`);
+                
+                // Send violation to server
+                fetch('/record_security_violation', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        test_id: testId,
+                        violation_type: type,
+                        timestamp: Date.now(),
+                        total_violations: securityViolations
+                    })
+                }).catch(error => {
+                    console.error('Failed to record violation:', error);
+                });
+            }
+            
+            function showSecurityAlert(message) {
+                // Create a custom alert that can't be easily dismissed
+                const alertDiv = document.createElement('div');
+                alertDiv.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: #dc3545;
+                    color: white;
+                    padding: 20px;
+                    border-radius: 8px;
+                    z-index: 10000;
+                    max-width: 400px;
+                    text-align: center;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                `;
+                alertDiv.innerHTML = `
+                    <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                    <h5>Security Alert</h5>
+                    <p>${message}</p>
+                    <button onclick="this.parentElement.remove()" class="btn btn-light btn-sm">Acknowledge</button>
+                `;
+                document.body.appendChild(alertDiv);
+                
+                // Auto-remove after 5 seconds
+                setTimeout(() => {
+                    if (alertDiv.parentElement) {
+                        alertDiv.remove();
+                    }
+                }, 5000);
+            }
+            
+            function updateSecurityStatus(level, text) {
+                const statusClass = `security-${level}`;
+                
+                // Desktop indicators
+                if (securityIndicator) {
+                    securityIndicator.className = `security-indicator ${statusClass}`;
+                    securityText.textContent = text;
+                }
+                
+                // Mobile indicators
+                if (mobileSecurityStatus) {
+                    mobileSecurityStatus.className = `security-indicator ${statusClass} text-center`;
+                    mobileSecurityText.textContent = text.split(' ')[0]; // Shorter text for mobile
+                }
+            }
+            
+            function updateHeartbeatStatus(level) {
+                const statusClass = `security-${level}`;
+                const statusText = level === 'active' ? 'Connected' : 
+                                 level === 'warning' ? 'Weak' : 'Disconnected';
+                
+                if (heartbeatStatus) {
+                    heartbeatStatus.className = `security-indicator ${statusClass}`;
+                    heartbeatStatus.querySelector('span').textContent = statusText;
+                }
+                
+                if (mobileHeartbeatStatus) {
+                    mobileHeartbeatStatus.className = `security-indicator ${statusClass} text-center`;
+                    mobileHeartbeatStatus.querySelector('span').textContent = statusText;
+                }
+            }
+            
+            // Return to fullscreen handler
+            returnFullscreenBtn.addEventListener('click', function() {
+                requestFullscreen();
+            });
+            
+            // Timer functionality
             function updateTimer() {
                 const now = new Date();
                 const timeLeft = endTime - now;
                 
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
+                    isTestActive = false;
+                    clearInterval(heartbeatInterval);
+                    clearInterval(securityCheckInterval);
+                    
                     if (timerElement) timerElement.textContent = "00:00";
                     if (mobileTimerElement) mobileTimerElement.textContent = "00:00";
+                    
                     alert("Time's up! Your test will be submitted automatically.");
                     testForm.submit();
                     return;
@@ -295,106 +757,27 @@
             updateTimer();
             const timerInterval = setInterval(updateTimer, 1000);
             
+            // Form submission handler
             testForm.addEventListener('submit', function(e) {
+                isTestActive = false;
                 clearInterval(timerInterval);
-            });
-              
-            // Enhanced security measures
-            window.addEventListener('beforeunload', function(e) {
-                const confirmationMessage = 'If you leave this page, your test progress will be lost.';
-                e.returnValue = confirmationMessage;
-                return confirmationMessage;
-            });
-
-            // Prevent back button during test
-            window.addEventListener('popstate', function(event) {
-                // Push the current state back to prevent navigation
-                window.history.pushState(null, null, window.location.pathname);
-                alert('Navigation is disabled during the test. Please complete or submit your test.');
+                clearInterval(heartbeatInterval);
+                clearInterval(securityCheckInterval);
+                
+                // Remove event listeners to allow form submission
+                window.removeEventListener('beforeunload', arguments.callee);
             });
             
-            // Add an initial state to the history
-            window.history.pushState(null, null, window.location.pathname);
-
-            // Block common key combinations that could be used to navigate away
-            document.addEventListener('keydown', function(e) {
-                // Prevent Alt+Left/Right (back/forward)
-                if (e.altKey && (e.keyCode === 37 || e.keyCode === 39)) {
-                    e.preventDefault();
-                    alert('Navigation is disabled during the test.');
-                    return false;
+            // Page unload cleanup
+            window.addEventListener('unload', function() {
+                if (isTestActive) {
+                    // Last-ditch effort to record abandonment
+                    navigator.sendBeacon('/test_abandoned', JSON.stringify({
+                        test_id: testId,
+                        timestamp: Date.now(),
+                        violations: securityViolations
+                    }));
                 }
-                
-                // Prevent Ctrl+R (refresh) and F5 (refresh)
-                if ((e.ctrlKey && e.keyCode === 82) || e.keyCode === 116) {
-                    e.preventDefault();
-                    alert('Page refresh is disabled during the test.');
-                    return false;
-                }
-                
-                // Prevent Ctrl+W (close tab)
-                if (e.ctrlKey && e.keyCode === 87) {
-                    e.preventDefault();
-                    alert('Closing the tab is disabled during the test.');
-                    return false;
-                }
-                
-                // Prevent Ctrl+T (new tab)
-                if (e.ctrlKey && e.keyCode === 84) {
-                    e.preventDefault();
-                    alert('Opening new tabs is disabled during the test.');
-                    return false;
-                }
-            });
-
-            // Prevent right-click context menu
-            document.addEventListener('contextmenu', function(e) {
-                e.preventDefault();
-                alert('Right-click is disabled during the test.');
-                return false;
-            });
-
-            // Monitor focus changes (when user switches tabs/windows)
-            let isTabActive = true;
-            let focusWarningShown = false;
-            
-            document.addEventListener('visibilitychange', function() {
-                if (document.hidden) {
-                    isTabActive = false;
-                    if (!focusWarningShown) {
-                        focusWarningShown = true;
-                        // Show warning when returning to the tab
-                        setTimeout(function() {
-                            if (!isTabActive) {
-                                alert('Warning: Switching tabs during a test may be considered suspicious behavior.');
-                            }
-                        }, 100);
-                    }
-                } else {
-                    isTabActive = true;
-                }
-            });
-
-            window.addEventListener('blur', function() {
-                isTabActive = false;
-            });
-
-            window.addEventListener('focus', function() {
-                isTabActive = true;
-                if (!focusWarningShown) {
-                    focusWarningShown = true;
-                    alert('Warning: Switching windows during a test may be considered suspicious behavior.');
-                }
-            });
-
-            // Add hover effects for multiple choice options
-            document.querySelectorAll('.form-check').forEach(check => {
-                check.addEventListener('mouseenter', function() {
-                    this.style.backgroundColor = '#f8f9fa';
-                });
-                check.addEventListener('mouseleave', function() {
-                    this.style.backgroundColor = '';
-                });
             });
         });
     </script>
