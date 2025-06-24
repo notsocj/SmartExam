@@ -204,7 +204,7 @@ def dashboard():
         results = Result.query.all()
         tests = Test.query.all()
         
-        # Calculate test statistics
+        # Calculate test statistics for admin overview
         test_statistics = {}
         for test in tests:
             test_results = Result.query.filter_by(test_id=test.id).all()
@@ -385,7 +385,7 @@ def export_result_csv(result_id):
         
         # Create data row
         row = [
-            user_result.date_taken.strftime('%d/%m/%Y %H:%M'),  # Timestamp
+            user_result.date_taken.strftime('%d/%m/%Y'),  # Timestamp
             user_result.user.name,  # Student Name  
             user_result.user.student_id,  # Student ID
             user_result.test.title,  # Test Name

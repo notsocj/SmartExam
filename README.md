@@ -17,7 +17,7 @@ Multiple Choice Questions
 Identification/Short Answer Questions
 Image-based Questions
 Question Management: Add, edit, and delete questions for each test
-Student Analytics: View detailed student performance records and statistics
+Student Analytics: View detailed student performance records and analytics
 Result Monitoring: Track all student test submissions and scores
 
 For Students
