@@ -203,7 +203,31 @@ def dashboard():
         users = User.query.all()
         results = Result.query.all()
         tests = Test.query.all()
-        return render_template('dashboard.html', users=users, results=results, tests=tests, now=now)
+        
+        # Calculate test statistics
+        test_statistics = {}
+        for test in tests:
+            test_results = Result.query.filter_by(test_id=test.id).all()
+            if test_results:
+                scores = [result.score for result in test_results]
+                test_statistics[test.id] = {
+                    'total_students': len(test_results),
+                    'average_score': sum(scores) / len(scores),
+                    'highest_score': max(scores),
+                    'lowest_score': min(scores),
+                    'student_results': [
+                        {
+                            'student_name': result.user.name,
+                            'student_id': result.user.student_id,
+                            'score': result.score,
+                            'date_taken': result.date_taken,
+                            'result_id': result.id
+                        }
+                        for result in sorted(test_results, key=lambda x: x.score, reverse=True)
+                    ]
+                }
+        
+        return render_template('dashboard.html', users=users, results=results, tests=tests, test_statistics=test_statistics, now=now)
     else:
         # For students, get their results and available tests
         user_results = Result.query.filter_by(user_id=current_user.id).all()
