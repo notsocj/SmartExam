@@ -559,13 +559,51 @@ def create_question(test_id):
     question_type = request.form.get('question_type')
     correct_answer = request.form.get('correct_answer')
     question_id = request.form.get('question_id', '')
+    use_choice_images = 'use_choice_images' in request.form
     
     # Process choices for multiple-choice
     choices = None
+    choice_images = None
+    
     if question_type == 'multiple_choice':
-        # Get choices from form and convert to JSON
-        choices_list = [c for c in request.form.getlist('choices') if c.strip()]
-        choices = json.dumps(choices_list)
+        if use_choice_images:
+            # Handle image choices
+            choice_images_list = []
+            existing_images = request.form.getlist('existing_choice_images')
+            uploaded_files = request.files.getlist('choice_images')
+            
+            for i, file in enumerate(uploaded_files):
+                image_path = None
+                
+                # Check if there's an existing image
+                if i < len(existing_images) and existing_images[i]:
+                    image_path = existing_images[i]
+                
+                # If a new file is uploaded, replace the existing one
+                if file and file.filename and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    # Create unique filename with question info
+                    unique_filename = f"choice_{test_id}_{int(datetime.now().timestamp())}_{i}_{filename}"
+                    upload_folder = os.path.join(app.static_folder, 'uploads')
+                    
+                    if not os.path.exists(upload_folder):
+                        os.makedirs(upload_folder)
+                    
+                    file_path = os.path.join(upload_folder, unique_filename)
+                    file.save(file_path)
+                    image_path = 'uploads/' + unique_filename
+                
+                if image_path:
+                    choice_images_list.append(image_path)
+            
+            if choice_images_list:
+                choice_images = json.dumps(choice_images_list)
+                # For image choices, create automatic text choices
+                choices = json.dumps([f"Image {i+1}" for i in range(len(choice_images_list))])
+        else:
+            # Handle text choices
+            choices_list = [c for c in request.form.getlist('choices') if c.strip()]
+            choices = json.dumps(choices_list)
     
     # Process image upload for image questions
     image_path = request.form.get('image_path')
@@ -575,14 +613,11 @@ def create_question(test_id):
             filename = secure_filename(file.filename)
             upload_folder = os.path.join(app.static_folder, 'uploads')
             
-            # Create the uploads directory if it doesn't exist
             if not os.path.exists(upload_folder):
                 os.makedirs(upload_folder)
             
             file_path = os.path.join(upload_folder, filename)
             file.save(file_path)
-            
-            # Store relative path from static folder
             image_path = 'uploads/' + filename
     
     if question_id:
@@ -591,8 +626,9 @@ def create_question(test_id):
         question.question_text = question_text
         question.question_type = question_type
         question.choices = choices
+        question.choice_images = choice_images
         question.correct_answer = correct_answer
-        if image_path:  # Only update if a new image was uploaded
+        if image_path:
             question.image_path = image_path
         question.updated_at = datetime.utcnow()
         flash('Question updated successfully')
@@ -603,6 +639,7 @@ def create_question(test_id):
             question_text=question_text,
             question_type=question_type,
             choices=choices,
+            choice_images=choice_images,
             correct_answer=correct_answer,
             image_path=image_path
         )
@@ -742,8 +779,11 @@ def submit_test(test_id):
         if question.image_path:
             question_data['image_path'] = question.image_path
             
-        if question.question_type == 'multiple_choice' and question.choices:
-            question_data['choices'] = json.loads(question.choices)
+        if question.question_type == 'multiple_choice':
+            if question.choices:
+                question_data['choices'] = json.loads(question.choices)
+            if question.choice_images:
+                question_data['choice_images'] = json.loads(question.choice_images)
         
         result_data[question.id] = question_data
     

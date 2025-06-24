@@ -53,6 +53,7 @@ class Question(db.Model):
     question_text = db.Column(db.Text, nullable=False)
     question_type = db.Column(db.String(20), nullable=False)  # 'multiple_choice', 'identification', or 'image'
     choices = db.Column(db.Text)  # Stored as JSON for multiple-choice questions
+    choice_images = db.Column(db.Text)  # Stored as JSON for multiple-choice image paths
     correct_answer = db.Column(db.Text, nullable=False)
     image_path = db.Column(db.String(255))  # Only for image questions
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
