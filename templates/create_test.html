@@ -453,22 +453,75 @@
                                             
                                             <div id="choices_container" class="mb-3" style="display: none;">
                                                 <label class="form-label">Choices</label>
-                                                <div id="choices_list">
-                                                    {% if question and question.question_type == 'multiple_choice' and question.choices_list %}
-                                                        {% for choice in question.choices_list %}
-                                                        <div class="input-group mb-2">
-                                                            <input type="text" class="form-control" name="choices" value="{{ choice }}">
-                                                            <button type="button" class="btn btn-outline-danger remove-choice">Remove</button>
-                                                        </div>
-                                                        {% endfor %}
-                                                    {% else %}
-                                                        <div class="input-group mb-2">
-                                                            <input type="text" class="form-control" name="choices">
-                                                            <button type="button" class="btn btn-outline-danger remove-choice">Remove</button>
-                                                        </div>
-                                                    {% endif %}
+                                                <div class="form-check mb-2">
+                                                    <input class="form-check-input" type="checkbox" id="use_choice_images" name="use_choice_images" {% if question and question.choice_images %}checked{% endif %}>
+                                                    <label class="form-check-label" for="use_choice_images">
+                                                        Use images for choices (answers will be "Image 1", "Image 2", etc.)
+                                                    </label>
                                                 </div>
-                                                <button type="button" class="btn btn-outline-primary btn-sm" id="add_choice">Add Choice</button>
+                                                
+                                                <div id="text_choices" style="display: block;">
+                                                    <div id="choices_list">
+                                                        {% if question and question.question_type == 'multiple_choice' and question.choices_list %}
+                                                            {% for choice in question.choices_list %}
+                                                            <div class="input-group mb-2">
+                                                                <input type="text" class="form-control" name="choices" value="{{ choice }}">
+                                                                <button type="button" class="btn btn-outline-danger remove-choice">Remove</button>
+                                                            </div>
+                                                            {% endfor %}
+                                                        {% else %}
+                                                            <div class="input-group mb-2">
+                                                                <input type="text" class="form-control" name="choices">
+                                                                <button type="button" class="btn btn-outline-danger remove-choice">Remove</button>
+                                                            </div>
+                                                        {% endif %}
+                                                    </div>
+                                                    <button type="button" class="btn btn-outline-primary btn-sm" id="add_choice">Add Choice</button>
+                                                </div>
+                                                
+                                                <div id="image_choices" style="display: none;">
+                                                    <div id="choice_images_list">
+                                                        {% if question and question.choice_images %}
+                                                            {% set choice_images_data = question.choice_images|from_json %}
+                                                            {% for image_path in choice_images_data %}
+                                                            <div class="choice-image-item mb-3 border rounded p-3">
+                                                                <div class="row align-items-center">
+                                                                    <div class="col-md-8">
+                                                                        <label class="form-label">Image {{ loop.index }}</label>
+                                                                        <input type="file" class="form-control choice-image-input" name="choice_images" accept="image/*">
+                                                                        <input type="hidden" name="existing_choice_images" value="{{ image_path }}">
+                                                                        {% if image_path %}
+                                                                        <div class="mt-2">
+                                                                            <img src="{{ url_for('static', filename=image_path) }}" alt="Choice {{ loop.index }}" class="img-thumbnail" style="max-height: 100px;">
+                                                                            <small class="text-muted d-block">Current image</small>
+                                                                        </div>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                    <div class="col-md-4 text-end">
+                                                                        <button type="button" class="btn btn-outline-danger remove-choice-image">Remove</button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            {% endfor %}
+                                                        {% else %}
+                                                            <div class="choice-image-item mb-3 border rounded p-3">
+                                                                <div class="row align-items-center">
+                                                                    <div class="col-md-8">
+                                                                        <label class="form-label">Image 1</label>
+                                                                        <input type="file" class="form-control choice-image-input" name="choice_images" accept="image/*">
+                                                                    </div>
+                                                                    <div class="col-md-4 text-end">
+                                                                        <button type="button" class="btn btn-outline-danger remove-choice-image">Remove</button>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        {% endif %}
+                                                    </div>
+                                                    <button type="button" class="btn btn-outline-primary btn-sm" id="add_choice_image">Add Image Choice</button>
+                                                    <div class="alert alert-info mt-2">
+                                                        <small><i class="fas fa-info-circle me-1"></i>When using image choices, the correct answer should be "Image 1", "Image 2", "Image 3", etc.</small>
+                                                    </div>
+                                                </div>
                                             </div>
                                             
                                             <div id="image_container" class="mb-3" style="display: none;">
@@ -648,6 +701,7 @@
             if (questionType) {
                 function updateFormFields() {
                     const choiceInputs = choicesContainer.querySelectorAll('input[name="choices"]');
+                    const choiceImageInputs = choicesContainer.querySelectorAll('input[name="choice_images"]');
                     const imageFileInput = document.getElementById('image_file');
                     const imagePathInput = document.getElementById('image_path');
                     
@@ -655,10 +709,8 @@
                         choicesContainer.style.display = 'block';
                         imageContainer.style.display = 'none';
                         
-                        // Make choices required for multiple choice
-                        choiceInputs.forEach(input => {
-                            input.setAttribute('required', '');
-                        });
+                        // Check which type of choices to show
+                        updateChoiceDisplay();
                         
                         // Remove image requirements
                         if (imageFileInput) imageFileInput.removeAttribute('required');
@@ -672,10 +724,9 @@
                         choiceInputs.forEach(input => {
                             input.removeAttribute('required');
                         });
-                        
-                        // Image is optional, but show the container
-                        if (imageFileInput) imageFileInput.removeAttribute('required');
-                        if (imagePathInput) imagePathInput.removeAttribute('required');
+                        choiceImageInputs.forEach(input => {
+                            input.removeAttribute('required');
+                        });
                         
                     } else { // identification
                         choicesContainer.style.display = 'none';
@@ -685,8 +736,26 @@
                         choiceInputs.forEach(input => {
                             input.removeAttribute('required');
                         });
+                        choiceImageInputs.forEach(input => {
+                            input.removeAttribute('required');
+                        });
                         if (imageFileInput) imageFileInput.removeAttribute('required');
                         if (imagePathInput) imagePathInput.removeAttribute('required');
+                    }
+                }
+                
+                // Function to update choice display based on checkbox
+                function updateChoiceDisplay() {
+                    const useChoiceImages = document.getElementById('use_choice_images');
+                    const textChoices = document.getElementById('text_choices');
+                    const imageChoices = document.getElementById('image_choices');
+                    
+                    if (useChoiceImages && useChoiceImages.checked) {
+                        textChoices.style.display = 'none';
+                        imageChoices.style.display = 'block';
+                    } else {
+                        textChoices.style.display = 'block';
+                        imageChoices.style.display = 'none';
                     }
                 }
                 
@@ -696,7 +765,13 @@
                 // Update form when question type changes
                 questionType.addEventListener('change', updateFormFields);
                 
-                // Add new choice field
+                // Update choice display when checkbox changes
+                const useChoiceImages = document.getElementById('use_choice_images');
+                if (useChoiceImages) {
+                    useChoiceImages.addEventListener('change', updateChoiceDisplay);
+                }
+                
+                // Add new text choice field
                 const addChoiceBtn = document.getElementById('add_choice');
                 const choicesList = document.getElementById('choices_list');
                 
@@ -705,27 +780,77 @@
                         const newChoice = document.createElement('div');
                         newChoice.className = 'input-group mb-2';
                         newChoice.innerHTML = `
-                            <input type="text" class="form-control" name="choices" ${questionType.value === 'multiple_choice' ? 'required' : ''}>
+                            <input type="text" class="form-control" name="choices">
                             <button type="button" class="btn btn-outline-danger remove-choice">Remove</button>
                         `;
                         choicesList.appendChild(newChoice);
                         
-                        // Add event listener to the new remove button
                         newChoice.querySelector('.remove-choice').addEventListener('click', function() {
                             choicesList.removeChild(newChoice);
                         });
                     });
-                    
-                    // Remove choice field
-                    document.addEventListener('click', function(e) {
-                        if (e.target.classList.contains('remove-choice')) {
-                            const choiceDiv = e.target.parentElement;
-                            if (choicesList.children.length > 1) { // Keep at least one choice for multiple choice
-                                choicesList.removeChild(choiceDiv);
-                            }
+                }
+                
+                // Add new image choice field
+                const addChoiceImageBtn = document.getElementById('add_choice_image');
+                const choiceImagesList = document.getElementById('choice_images_list');
+                
+                if (addChoiceImageBtn && choiceImagesList) {
+                    addChoiceImageBtn.addEventListener('click', function() {
+                        const imageCount = choiceImagesList.children.length + 1;
+                        const newImageChoice = document.createElement('div');
+                        newImageChoice.className = 'choice-image-item mb-3 border rounded p-3';
+                        newImageChoice.innerHTML = `
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <label class="form-label">Image ${imageCount}</label>
+                                    <input type="file" class="form-control choice-image-input" name="choice_images" accept="image/*">
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <button type="button" class="btn btn-outline-danger remove-choice-image">Remove</button>
+                                </div>
+                            </div>
+                        `;
+                        choiceImagesList.appendChild(newImageChoice);
+                        
+                        newImageChoice.querySelector('.remove-choice-image').addEventListener('click', function() {
+                            choiceImagesList.removeChild(newImageChoice);
+                            updateImageLabels();
+                        });
+                    });
+                }
+                
+                // Remove choice image field
+                document.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('remove-choice-image')) {
+                        const choiceDiv = e.target.closest('.choice-image-item');
+                        if (choiceImagesList.children.length > 1) {
+                            choiceImagesList.removeChild(choiceDiv);
+                            updateImageLabels();
+                        }
+                    }
+                });
+                
+                // Update image labels after removal
+                function updateImageLabels() {
+                    const imageItems = choiceImagesList.querySelectorAll('.choice-image-item');
+                    imageItems.forEach((item, index) => {
+                        const label = item.querySelector('.form-label');
+                        if (label) {
+                            label.textContent = `Image ${index + 1}`;
                         }
                     });
                 }
+                
+                // Remove text choice field
+                document.addEventListener('click', function(e) {
+                    if (e.target.classList.contains('remove-choice')) {
+                        const choiceDiv = e.target.parentElement;
+                        if (choicesList.children.length > 1) {
+                            choicesList.removeChild(choiceDiv);
+                        }
+                    }
+                });
                 
                 // Image preview functionality
                 const imageFileInput = document.getElementById('image_file');

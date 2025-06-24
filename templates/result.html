@@ -716,18 +716,47 @@
                                     {% if data.question_type == 'multiple_choice' and data.choices %}
                                         <div class="mb-3">
                                             <p class="mb-2">Available choices:</p>
-                                            <div class="list-group">
-                                                {% for choice in data.choices %}
-                                                <div class="list-group-item {% if choice == data.correct_answer %}list-group-item-success{% elif choice == data.user_answer and data.user_answer != data.correct_answer %}list-group-item-danger{% endif %}">
-                                                    {{ choice }}
-                                                    {% if choice == data.correct_answer %}
-                                                    <span class="float-end"><i class="fas fa-check-circle text-success"></i></span>
-                                                    {% elif choice == data.user_answer and data.user_answer != data.correct_answer %}
-                                                    <span class="float-end"><i class="fas fa-times-circle text-danger"></i></span>
-                                                    {% endif %}
+                                            {% if data.choice_images %}
+                                                <!-- Image choices display -->
+                                                <div class="row">
+                                                    {% for image_path in data.choice_images %}
+                                                    <div class="col-md-6 col-lg-4 mb-3">
+                                                        <div class="card {% if data.choices[loop.index0] == data.correct_answer %}border-success bg-light{% elif data.choices[loop.index0] == data.user_answer and data.user_answer != data.correct_answer %}border-danger bg-light{% endif %}">
+                                                            <div class="card-body text-center p-3">
+                                                                <img src="{{ url_for('static', filename=image_path) }}" 
+                                                                     alt="Choice {{ loop.index }}" 
+                                                                     class="img-fluid mb-2" 
+                                                                     style="max-height: 100px; object-fit: contain;">
+                                                                <h6 class="mb-1">{{ data.choices[loop.index0] }}</h6>
+                                                                {% if data.choices[loop.index0] == data.correct_answer %}
+                                                                <span class="badge bg-success">
+                                                                    <i class="fas fa-check-circle"></i> Correct
+                                                                </span>
+                                                                {% elif data.choices[loop.index0] == data.user_answer %}
+                                                                <span class="badge bg-danger">
+                                                                    <i class="fas fa-times-circle"></i> Your Answer
+                                                                </span>
+                                                                {% endif %}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    {% endfor %}
                                                 </div>
-                                                {% endfor %}
-                                            </div>
+                                            {% else %}
+                                                <!-- Text choices display -->
+                                                <div class="list-group">
+                                                    {% for choice in data.choices %}
+                                                    <div class="list-group-item {% if choice == data.correct_answer %}list-group-item-success{% elif choice == data.user_answer and data.user_answer != data.correct_answer %}list-group-item-danger{% endif %}">
+                                                        {{ choice }}
+                                                        {% if choice == data.correct_answer %}
+                                                        <span class="float-end"><i class="fas fa-check-circle text-success"></i></span>
+                                                        {% elif choice == data.user_answer and data.user_answer != data.correct_answer %}
+                                                        <span class="float-end"><i class="fas fa-times-circle text-danger"></i></span>
+                                                        {% endif %}
+                                                    </div>
+                                                    {% endfor %}
+                                                </div>
+                                            {% endif %}
                                         </div>
                                     {% else %}
                                         <div class="row mb-3">

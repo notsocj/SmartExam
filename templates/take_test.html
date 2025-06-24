@@ -275,70 +275,82 @@
             <!-- Test Form -->
             <form id="test-form" method="POST" action="{{ url_for('submit_test', test_id=test.id) }}">
                 <div class="row">
-                    <div class="col-12">
-                        {% for question in test.questions %}
-                        <div class="card question-card mb-4 shadow-sm">
-                            <div class="card-header bg-gradient" style="background: linear-gradient(135deg, #007bff, #0056b3);">
-                                <h4 class="h5 mb-0 text-white">
-                                    <i class="fas fa-question-circle me-2"></i>Question {{ loop.index }}
-                                </h4>
-                            </div>
+                    {% for question in test.questions %}
+                    <div class="col-12 mb-4">
+                        <div class="card question-card shadow-sm">
                             <div class="card-body p-4">
-                                <p class="mb-4 fs-6">{{ question.question_text }}</p>
+                                <h5 class="card-title">Question {{ loop.index }}</h5>
+                                <p class="mb-3">{{ question.question_text }}</p>
                                 
                                 {% if question.image_path %}
-                                <div class="mb-4 text-center">
+                                <div class="mb-3 text-center">
                                     <img src="{{ url_for('static', filename=question.image_path) }}" 
-                                         alt="Question Image" 
-                                         class="img-fluid rounded shadow-sm" 
-                                         style="max-height: 300px; max-width: 100%;">
+                                         alt="Question Image" class="img-fluid" style="max-height: 300px;">
                                 </div>
                                 {% endif %}
                                 
                                 {% if question.question_type == 'multiple_choice' %}
-                                    <div class="mb-3">
-                                        <label class="form-label fw-semibold">Choose the correct answer:</label>
-                                        {% set choices = question.choices|from_json %}
+                                    {% if question.choice_images %}
+                                        <!-- Image choices -->
+                                        {% set choice_images_data = question.choice_images|from_json %}
+                                        {% set choices_data = question.choices|from_json %}
                                         <div class="row">
-                                            {% for choice in choices %}
-                                            <div class="col-12 col-md-6 mb-2">
-                                                <div class="form-check p-3 border rounded hover-effect">
-                                                    <input class="form-check-input" type="radio" 
-                                                           name="answer_{{ question.id }}" 
-                                                           id="choice_{{ question.id }}_{{ loop.index }}" 
-                                                           value="{{ choice }}">
-                                                    <label class="form-check-label w-100" 
-                                                           for="choice_{{ question.id }}_{{ loop.index }}">
-                                                        {{ choice }}
-                                                    </label>
+                                            {% for image_path in choice_images_data %}
+                                            <div class="col-md-6 col-lg-4 mb-3">
+                                                <div class="card choice-card h-100" style="cursor: pointer;" onclick="selectImageChoice({{ question.id }}, '{{ choices_data[loop.index0] }}')">
+                                                    <div class="card-body text-center p-3">
+                                                        <img src="{{ url_for('static', filename=image_path) }}" 
+                                                             alt="Choice {{ loop.index }}" 
+                                                             class="img-fluid mb-2" 
+                                                             style="max-height: 150px; object-fit: contain;">
+                                                        <div class="form-check">
+                                                            <input class="form-check-input" type="radio" 
+                                                                   name="answer_{{ question.id }}" 
+                                                                   value="{{ choices_data[loop.index0] }}" 
+                                                                   id="q{{ question.id }}_choice{{ loop.index }}">
+                                                            <label class="form-check-label fw-bold" for="q{{ question.id }}_choice{{ loop.index }}">
+                                                                {{ choices_data[loop.index0] }}
+                                                            </label>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                             {% endfor %}
                                         </div>
-                                    </div>
+                                    {% else %}
+                                        <!-- Text choices -->
+                                        {% set choices_data = question.choices|from_json %}
+                                        {% for choice in choices_data %}
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="radio" 
+                                                   name="answer_{{ question.id }}" 
+                                                   value="{{ choice }}" 
+                                                   id="q{{ question.id }}_choice{{ loop.index }}">
+                                            <label class="form-check-label" for="q{{ question.id }}_choice{{ loop.index }}">
+                                                {{ choice }}
+                                            </label>
+                                        </div>
+                                        {% endfor %}
+                                    {% endif %}
                                 {% else %}
-                                    <div class="mb-3">
-                                        <label for="answer_{{ question.id }}" class="form-label fw-semibold">Your answer:</label>
-                                        <input type="text" class="form-control form-control-lg" 
-                                               id="answer_{{ question.id }}" 
-                                               name="answer_{{ question.id }}"
-                                               placeholder="Enter your answer here...">
-                                    </div>
+                                    <!-- Text input for identification/image questions -->
+                                    <input type="text" class="form-control" 
+                                           name="answer_{{ question.id }}" 
+                                           placeholder="Enter your answer here" required>
                                 {% endif %}
                             </div>
                         </div>
-                        {% endfor %}
                     </div>
-                </div>
-                
-                <!-- Submit Button -->
-                <div class="row mb-5">
+                    {% endfor %}
+                    
+                    <!-- Submit Button -->
                     <div class="col-12">
-                        <div class="text-center">
-                            <button type="submit" class="btn btn-primary btn-lg px-5 py-3 shadow btn-submit">
-                                <i class="fas fa-paper-plane"></i>
-                                <span>Submit Test</span>
-                            </button>
+                        <div class="card shadow-sm">
+                            <div class="card-body text-center p-4">
+                                <button type="submit" class="btn btn-success btn-lg btn-submit">
+                                    <i class="fas fa-paper-plane me-2"></i>Submit Test
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -778,6 +790,52 @@
                         violations: securityViolations
                     }));
                 }
+            });
+        });
+        
+        // Function to select image choice
+        function selectImageChoice(questionId, choiceValue) {
+            const radio = document.querySelector(`input[name="answer_${questionId}"][value="${choiceValue}"]`);
+            if (radio) {
+                radio.checked = true;
+                
+                // Update visual feedback
+                const allCards = document.querySelectorAll(`input[name="answer_${questionId}"]`).forEach(input => {
+                    const card = input.closest('.choice-card');
+                    if (card) {
+                        card.classList.remove('border-primary', 'bg-light');
+                    }
+                });
+                
+                const selectedCard = radio.closest('.choice-card');
+                if (selectedCard) {
+                    selectedCard.classList.add('border-primary', 'bg-light');
+                }
+            }
+        }
+        
+        // Add visual feedback for image choices
+        document.addEventListener('DOMContentLoaded', function() {
+            const choiceCards = document.querySelectorAll('.choice-card');
+            choiceCards.forEach(card => {
+                card.addEventListener('click', function() {
+                    const radio = this.querySelector('input[type="radio"]');
+                    if (radio) {
+                        radio.checked = true;
+                        
+                        // Remove selection from other cards in the same question
+                        const questionName = radio.name;
+                        document.querySelectorAll(`input[name="${questionName}"]`).forEach(input => {
+                            const otherCard = input.closest('.choice-card');
+                            if (otherCard && otherCard !== card) {
+                                otherCard.classList.remove('border-primary', 'bg-light');
+                            }
+                        });
+                        
+                        // Add selection to current card
+                        this.classList.add('border-primary', 'bg-light');
+                    }
+                });
             });
         });
     </script>

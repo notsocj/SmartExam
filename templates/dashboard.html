@@ -567,13 +567,123 @@
                                             <a href="{{ url_for('view_result', result_id=result.id) }}" class="btn btn-sm btn-outline-info">
                                                 <i class="fas fa-eye me-1"></i>View
                                             </a>
+                                            <!-- Add Statistics Button -->
+                                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#statisticsModal{{ result.test_id }}">
+                                                <i class="fas fa-chart-bar me-1"></i>Statistics
+                                            </button>
                                         </td>
                                     </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>                        </div>
                     </div>
-                </div>            </div>
+                </div>
+
+                <!-- Test Statistics Section -->
+                {% if test_statistics %}
+                <div class="section-header mt-5">
+                    <h3 class="h4 mb-1">Test Performance Analytics</h3>
+                    <p class="text-muted">Comprehensive insights into student performance across all tests</p>
+                </div>
+
+                <div class="row">
+                    {% for test in tests %}
+                        {% if test.id in test_statistics %}
+                            {% set stats = test_statistics[test.id] %}
+                            <div class="col-lg-6 col-xl-4 mb-4">
+                                <div class="card stats-card shadow-sm h-100">
+                                    <div class="card-header bg-light border-0 pb-0">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h6 class="card-title mb-1 fw-bold">{{ test.title }}</h6>
+                                                <span class="badge bg-primary">{{ stats.total_students }} responses</span>
+                                            </div>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#testInsightsModal{{ test.id }}">
+                                                <i class="fas fa-chart-line me-1"></i>Insights
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body pt-3">
+                                        <!-- Key Metrics -->
+                                        <div class="row text-center mb-3">
+                                            <div class="col-4">
+                                                <div class="metric-box">
+                                                    <h6 class="text-muted mb-1" style="font-size: 0.75rem;">Average</h6>
+                                                    <h5 class="text-primary mb-0">{{ "{:.1f}".format(stats.average_score) }}</h5>
+                                                    <small class="text-muted">points</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="metric-box">
+                                                    <h6 class="text-muted mb-1" style="font-size: 0.75rem;">Median</h6>
+                                                    {% set scores = [] %}
+                                                    {% for student in stats.student_results %}
+                                                        {% set _ = scores.append(student.score) %}
+                                                    {% endfor %}
+                                                    {% set sorted_scores = scores|sort %}
+                                                    {% set median = sorted_scores[(sorted_scores|length // 2)] if sorted_scores|length % 2 == 1 else ((sorted_scores[(sorted_scores|length // 2) - 1] + sorted_scores[sorted_scores|length // 2]) / 2) %}
+                                                    <h5 class="text-info mb-0">{{ "{:.0f}".format(median) }}</h5>
+                                                    <small class="text-muted">points</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-4">
+                                                <div class="metric-box">
+                                                    <h6 class="text-muted mb-1" style="font-size: 0.75rem;">Range</h6>
+                                                    <h5 class="text-success mb-0">{{ "{:.0f}".format(stats.lowest_score) }}-{{ "{:.0f}".format(stats.highest_score) }}</h5>
+                                                    <small class="text-muted">points</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Mini Performance Distribution -->
+                                        <div class="performance-bars mb-3">
+                                            <h6 class="text-muted mb-2" style="font-size: 0.8rem;">Performance Distribution</h6>
+                                            {% set excellent = stats.student_results|selectattr('score', 'ge', 90)|list|length %}
+                                            {% set good = stats.student_results|selectattr('score', 'ge', 70)|selectattr('score', 'lt', 90)|list|length %}
+                                            {% set fair = stats.student_results|selectattr('score', 'ge', 50)|selectattr('score', 'lt', 70)|list|length %}
+                                            {% set poor = stats.student_results|selectattr('score', 'lt', 50)|list|length %}
+                                            
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <small class="text-muted">Excellent (90-100%)</small>
+                                                <span class="badge bg-success">{{ excellent }}</span>
+                                            </div>
+                                            <div class="progress mb-2" style="height: 4px;">
+                                                <div class="progress-bar bg-success" style="width: {{ (excellent / stats.total_students * 100) if stats.total_students > 0 else 0 }}%"></div>
+                                            </div>
+                                            
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <small class="text-muted">Good (70-89%)</small>
+                                                <span class="badge bg-info">{{ good }}</span>
+                                            </div>
+                                            <div class="progress mb-2" style="height: 4px;">
+                                                <div class="progress-bar bg-info" style="width: {{ (good / stats.total_students * 100) if stats.total_students > 0 else 0 }}%"></div>
+                                            </div>
+                                            
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <small class="text-muted">Fair (50-69%)</small>
+                                                <span class="badge bg-warning">{{ fair }}</span>
+                                            </div>
+                                            <div class="progress mb-2" style="height: 4px;">
+                                                <div class="progress-bar bg-warning" style="width: {{ (fair / stats.total_students * 100) if stats.total_students > 0 else 0 }}%"></div>
+                                            </div>
+                                            
+                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                <small class="text-muted">Needs Improvement (&lt;50%)</small>
+                                                <span class="badge bg-danger">{{ poor }}</span>
+                                            </div>
+                                            <div class="progress" style="height: 4px;">
+                                                <div class="progress-bar bg-danger" style="width: {{ (poor / stats.total_students * 100) if stats.total_students > 0 else 0 }}%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+            </div>
         </div>
     </div>    <!-- Delete User Modals -->
     {% for user in users %}
@@ -622,6 +732,283 @@
             </div>
         </div>
     </div>
+    {% endfor %}
+
+    <!-- Test Insights Modals -->
+    {% for test in tests %}
+        {% if test.id in test_statistics %}
+            {% set stats = test_statistics[test.id] %}
+            <div class="modal fade" id="testInsightsModal{{ test.id }}" tabindex="-1" aria-labelledby="testInsightsModalLabel{{ test.id }}" aria-hidden="true">
+                <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                    <div class="modal-content border-0 shadow-lg rounded-3">
+                        <div class="modal-header bg-primary text-white border-0">
+                            <h5 class="modal-title fw-bold d-flex align-items-center" id="testInsightsModalLabel{{ test.id }}">
+                                <i class="fas fa-chart-bar me-2"></i>{{ test.title }} - Performance Insights
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body p-4">
+                            <!-- Insights Header -->
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <div>
+                                    <h6 class="text-muted mb-1">{{ stats.total_students }} responses</h6>
+                                    <p class="text-muted mb-0">Performance analytics and student breakdown</p>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-primary fs-6 px-3 py-2">
+                                        <i class="fas fa-chart-line me-1"></i>Insights
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Key Metrics Cards -->
+                            <div class="row mb-4">
+                                <div class="col-md-3 mb-3">
+                                    <div class="card text-center border-0" style="background-color: #f8f9fa;">
+                                        <div class="card-body py-3">
+                                            <h6 class="text-muted mb-1" style="font-size: 0.8rem;">Average</h6>
+                                            <h3 class="text-primary mb-0">{{ "{:.1f}".format(stats.average_score) }}</h3>
+                                            <small class="text-muted">points</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="card text-center border-0" style="background-color: #f8f9fa;">
+                                        <div class="card-body py-3">
+                                            <h6 class="text-muted mb-1" style="font-size: 0.8rem;">Median</h6>
+                                            {% set scores = [] %}
+                                            {% for student in stats.student_results %}
+                                                {% set _ = scores.append(student.score) %}
+                                            {% endfor %}
+                                            {% set sorted_scores = scores|sort %}
+                                            {% set median = sorted_scores[(sorted_scores|length // 2)] if sorted_scores|length % 2 == 1 else ((sorted_scores[(sorted_scores|length // 2) - 1] + sorted_scores[sorted_scores|length // 2]) / 2) %}
+                                            <h3 class="text-info mb-0">{{ "{:.0f}".format(median) }}</h3>
+                                            <small class="text-muted">points</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="card text-center border-0" style="background-color: #f8f9fa;">
+                                        <div class="card-body py-3">
+                                            <h6 class="text-muted mb-1" style="font-size: 0.8rem;">Range</h6>
+                                            <h3 class="text-success mb-0">{{ "{:.0f}".format(stats.lowest_score) }}-{{ "{:.0f}".format(stats.highest_score) }}</h3>
+                                            <small class="text-muted">points</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <div class="card text-center border-0" style="background-color: #f8f9fa;">
+                                        <div class="card-body py-3">
+                                            <h6 class="text-muted mb-1" style="font-size: 0.8rem;">Students</h6>
+                                            <h3 class="text-warning mb-0">{{ stats.total_students }}</h3>
+                                            <small class="text-muted">completed</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Score Distribution Chart -->
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <div class="card border-0" style="background-color: #f8f9fa;">
+                                        <div class="card-body">
+                                            <h6 class="card-title text-center mb-3">Score Distribution</h6>
+                                            <canvas id="scoreChart{{ test.id }}" width="300" height="200"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-4">
+                                    <div class="card border-0" style="background-color: #f8f9fa;">
+                                        <div class="card-body">
+                                            <h6 class="card-title mb-3">Performance Summary</h6>
+                                            {% set excellent = stats.student_results|selectattr('score', 'ge', 90)|list|length %}
+                                            {% set good = stats.student_results|selectattr('score', 'ge', 70)|selectattr('score', 'lt', 90)|list|length %}
+                                            {% set fair = stats.student_results|selectattr('score', 'ge', 50)|selectattr('score', 'lt', 70)|list|length %}
+                                            {% set poor = stats.student_results|selectattr('score', 'lt', 50)|list|length %}
+                                            
+                                            <div class="mb-3">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <span class="text-success fw-bold">Excellent (90-100%)</span>
+                                                    <span class="badge bg-success">{{ excellent }} students</span>
+                                                </div>
+                                                <div class="progress mb-3" style="height: 8px;">
+                                                    <div class="progress-bar bg-success" style="width: {{ (excellent / stats.total_students * 100) if stats.total_students > 0 else 0 }}%"></div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <span class="text-info fw-bold">Good (70-89%)</span>
+                                                    <span class="badge bg-info">{{ good }} students</span>
+                                                </div>
+                                                <div class="progress mb-3" style="height: 8px;">
+                                                    <div class="progress-bar bg-info" style="width: {{ (good / stats.total_students * 100) if stats.total_students > 0 else 0 }}%"></div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <span class="text-warning fw-bold">Fair (50-69%)</span>
+                                                    <span class="badge bg-warning">{{ fair }} students</span>
+                                                </div>
+                                                <div class="progress mb-3" style="height: 8px;">
+                                                    <div class="progress-bar bg-warning" style="width: {{ (fair / stats.total_students * 100) if stats.total_students > 0 else 0 }}%"></div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <span class="text-danger fw-bold">Needs Improvement (&lt;50%)</span>
+                                                    <span class="badge bg-danger">{{ poor }} students</span>
+                                                </div>
+                                                <div class="progress" style="height: 8px;">
+                                                    <div class="progress-bar bg-danger" style="width: {{ (poor / stats.total_students * 100) if stats.total_students > 0 else 0 }}%"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Individual Student Results Table -->
+                            <div class="card border-0" style="background-color: #f8f9fa;">
+                                <div class="card-header bg-white border-0">
+                                    <h6 class="card-title mb-0">Individual Student Results</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-hover mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th class="px-4 py-3">Rank</th>
+                                                    <th class="px-4 py-3">Student Name</th>
+                                                    <th class="px-4 py-3">Student ID</th>
+                                                    <th class="px-4 py-3">Score</th>
+                                                    <th class="px-4 py-3">Performance</th>
+                                                    <th class="px-4 py-3">Date Taken</th>
+                                                    <th class="px-4 py-3">Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for student in stats.student_results %}
+                                                <tr style="background-color: white;">
+                                                    <td class="px-4 py-3">
+                                                        <div class="d-flex align-items-center">
+                                                            {% if loop.index <= 3 %}
+                                                                <span class="badge {{ 'bg-warning' if loop.index == 1 else 'bg-secondary' if loop.index == 2 else 'bg-dark' }} me-2">{{ loop.index }}</span>
+                                                                <i class="fas fa-trophy {{ 'text-warning' if loop.index == 1 else 'text-secondary' if loop.index == 2 else 'text-dark' }}"></i>
+                                                            {% else %}
+                                                                <span class="badge bg-light text-dark">{{ loop.index }}</span>
+                                                            {% endif %}
+                                                        </div>
+                                                    </td>
+                                                    <td class="px-4 py-3">
+                                                        <h6 class="mb-0">{{ student.student_name }}</h6>
+                                                    </td>
+                                                    <td class="px-4 py-3">{{ student.student_id }}</td>
+                                                    <td class="px-4 py-3">
+                                                        <span class="fw-bold fs-5">{{ "{:.1f}".format(student.score) }}%</span>
+                                                    </td>
+                                                    <td class="px-4 py-3">
+                                                        <div class="progress" style="width: 100px; height: 8px;">
+                                                            <div class="progress-bar {{ 'bg-success' if student.score >= 90 else 'bg-info' if student.score >= 70 else 'bg-warning' if student.score >= 50 else 'bg-danger' }}" 
+                                                                 style="width: {{ student.score }}%"></div>
+                                                        </div>
+                                                    </td>
+                                                    <td class="px-4 py-3">{{ student.date_taken.strftime('%m/%d/%Y %H:%M') }}</td>
+                                                    <td class="px-4 py-3">
+                                                        <a href="{{ url_for('view_result', result_id=student.result_id) }}" class="btn btn-sm btn-outline-info">
+                                                            <i class="fas fa-eye me-1"></i>View
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Script for Each Test -->
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Create score distribution chart for {{ test.title }}
+                    const ctx{{ test.id }} = document.getElementById('scoreChart{{ test.id }}').getContext('2d');
+                    
+                    // Calculate score ranges
+                    const scores = [{% for student in stats.student_results %}{{ student.score }}{% if not loop.last %},{% endif %}{% endfor %}];
+                    const scoreRanges = [0, 0, 0, 0, 0, 0, 0, 0]; // 0-10, 10-20, ..., 70-80, 80-90, 90-100
+                    
+                    scores.forEach(score => {
+                        const rangeIndex = Math.min(Math.floor(score / 10), 9);
+                        if (rangeIndex >= 0 && rangeIndex <= 7) {
+                            scoreRanges[rangeIndex]++;
+                        }
+                        if (score >= 90) scoreRanges[7]++; // 90-100 range
+                    });
+                    
+                    new Chart(ctx{{ test.id }}, {
+                        type: 'bar',
+                        data: {
+                            labels: ['0-10', '10-20', '20-30', '30-40', '40-50', '50-60', '60-70', '70-80', '80-90', '90-100'],
+                            datasets: [{
+                                label: 'Number of Students',
+                                data: [
+                                    scores.filter(s => s >= 0 && s < 10).length,
+                                    scores.filter(s => s >= 10 && s < 20).length,
+                                    scores.filter(s => s >= 20 && s < 30).length,
+                                    scores.filter(s => s >= 30 && s < 40).length,
+                                    scores.filter(s => s >= 40 && s < 50).length,
+                                    scores.filter(s => s >= 50 && s < 60).length,
+                                    scores.filter(s => s >= 60 && s < 70).length,
+                                    scores.filter(s => s >= 70 && s < 80).length,
+                                    scores.filter(s => s >= 80 && s < 90).length,
+                                    scores.filter(s => s >= 90).length
+                                ],
+                                backgroundColor: '#8B5CF6',
+                                borderColor: '#7C3AED',
+                                borderWidth: 1,
+                                borderRadius: 4
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    ticks: {
+                                        stepSize: 1
+                                    },
+                                    title: {
+                                        display: true,
+                                        text: 'No. of respondents'
+                                    }
+                                },
+                                x: {
+                                    title: {
+                                        display: true,
+                                        text: 'Points scored'
+                                    }
+                                }
+                            }
+                        }
+                    });
+                });
+            </script>
+        {% endif %}
     {% endfor %}
 
             {% else %}
@@ -730,7 +1117,7 @@
                 </div>
             {% endif %}
         </div>
-    </main>    <!-- Grey footer like in the results page -->
+    </div>    <!-- Grey footer like in the results page -->
     <div class="text-center py-3 text-muted mt-3">
         <small>SmartExaM © 2023 | Empowering education through technology</small>
     </div>
