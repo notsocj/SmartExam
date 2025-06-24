@@ -483,17 +483,23 @@
                                                     <div id="choice_images_list">
                                                         {% if question and question.choice_images %}
                                                             {% set choice_images_data = question.choice_images|from_json %}
+                                                            {% set choice_descriptions = question.choices|from_json if question.choices else [] %}
                                                             {% for image_path in choice_images_data %}
                                                             <div class="choice-image-item mb-3 border rounded p-3">
                                                                 <div class="row align-items-center">
                                                                     <div class="col-md-8">
-                                                                        <label class="form-label">Image {{ loop.index }}</label>
+                                                                        <label class="form-label">Image Description</label>
+                                                                        <input type="text" class="form-control mb-2 choice-description-input" 
+                                                                               name="choice_descriptions" 
+                                                                               placeholder="Enter description for this image (e.g., 'Red Apple', 'Triangle Shape')"
+                                                                               value="{{ choice_descriptions[loop.index0] if loop.index0 < choice_descriptions|length else ('Image ' + loop.index|string) }}"
+                                                                               required>
                                                                         <input type="file" class="form-control choice-image-input" name="choice_images" accept="image/*">
                                                                         <input type="hidden" name="existing_choice_images" value="{{ image_path }}">
                                                                         {% if image_path %}
                                                                         <div class="mt-2">
                                                                             <img src="{{ url_for('static', filename=image_path) }}" alt="Choice {{ loop.index }}" class="img-thumbnail" style="max-height: 100px;">
-                                                                            <small class="text-muted d-block">Current image</small>
+                                                                            <small class="text-muted d-block">Current image: {{ choice_descriptions[loop.index0] if loop.index0 < choice_descriptions|length else ('Image ' + loop.index|string) }}</small>
                                                                         </div>
                                                                         {% endif %}
                                                                     </div>
@@ -507,7 +513,12 @@
                                                             <div class="choice-image-item mb-3 border rounded p-3">
                                                                 <div class="row align-items-center">
                                                                     <div class="col-md-8">
-                                                                        <label class="form-label">Image 1</label>
+                                                                        <label class="form-label">Image Description</label>
+                                                                        <input type="text" class="form-control mb-2 choice-description-input" 
+                                                                               name="choice_descriptions" 
+                                                                               placeholder="Enter description for this image (e.g., 'Red Apple', 'Triangle Shape')"
+                                                                               value="Image 1"
+                                                                               required>
                                                                         <input type="file" class="form-control choice-image-input" name="choice_images" accept="image/*">
                                                                     </div>
                                                                     <div class="col-md-4 text-end">
@@ -519,7 +530,7 @@
                                                     </div>
                                                     <button type="button" class="btn btn-outline-primary btn-sm" id="add_choice_image">Add Image Choice</button>
                                                     <div class="alert alert-info mt-2">
-                                                        <small><i class="fas fa-info-circle me-1"></i>When using image choices, the correct answer should be "Image 1", "Image 2", "Image 3", etc.</small>
+                                                        <small><i class="fas fa-info-circle me-1"></i>Enter custom descriptions for each image. The correct answer should match one of these descriptions exactly.</small>
                                                     </div>
                                                 </div>
                                             </div>
@@ -803,7 +814,12 @@
                         newImageChoice.innerHTML = `
                             <div class="row align-items-center">
                                 <div class="col-md-8">
-                                    <label class="form-label">Image ${imageCount}</label>
+                                    <label class="form-label">Image Description</label>
+                                    <input type="text" class="form-control mb-2 choice-description-input" 
+                                           name="choice_descriptions" 
+                                           placeholder="Enter description for this image (e.g., 'Red Apple', 'Triangle Shape')"
+                                           value="Image ${imageCount}"
+                                           required>
                                     <input type="file" class="form-control choice-image-input" name="choice_images" accept="image/*">
                                 </div>
                                 <div class="col-md-4 text-end">
@@ -820,6 +836,17 @@
                     });
                 }
                 
+                // Update image labels after removal
+                function updateImageLabels() {
+                    const imageItems = choiceImagesList.querySelectorAll('.choice-image-item');
+                    imageItems.forEach((item, index) => {
+                        const descInput = item.querySelector('.choice-description-input');
+                        if (descInput && descInput.value.startsWith('Image ')) {
+                            descInput.value = `Image ${index + 1}`;
+                        }
+                    });
+                }
+                
                 // Remove choice image field
                 document.addEventListener('click', function(e) {
                     if (e.target.classList.contains('remove-choice-image')) {
@@ -827,27 +854,6 @@
                         if (choiceImagesList.children.length > 1) {
                             choiceImagesList.removeChild(choiceDiv);
                             updateImageLabels();
-                        }
-                    }
-                });
-                
-                // Update image labels after removal
-                function updateImageLabels() {
-                    const imageItems = choiceImagesList.querySelectorAll('.choice-image-item');
-                    imageItems.forEach((item, index) => {
-                        const label = item.querySelector('.form-label');
-                        if (label) {
-                            label.textContent = `Image ${index + 1}`;
-                        }
-                    });
-                }
-                
-                // Remove text choice field
-                document.addEventListener('click', function(e) {
-                    if (e.target.classList.contains('remove-choice')) {
-                        const choiceDiv = e.target.parentElement;
-                        if (choicesList.children.length > 1) {
-                            choicesList.removeChild(choiceDiv);
                         }
                     }
                 });

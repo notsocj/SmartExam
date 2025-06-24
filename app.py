@@ -567,10 +567,14 @@ def create_question(test_id):
     
     if question_type == 'multiple_choice':
         if use_choice_images:
-            # Handle image choices
+            # Handle image choices with custom descriptions
             choice_images_list = []
+            choice_descriptions = request.form.getlist('choice_descriptions')
             existing_images = request.form.getlist('existing_choice_images')
             uploaded_files = request.files.getlist('choice_images')
+            
+            # Build final descriptions list
+            final_descriptions = []
             
             for i, file in enumerate(uploaded_files):
                 image_path = None
@@ -595,11 +599,15 @@ def create_question(test_id):
                 
                 if image_path:
                     choice_images_list.append(image_path)
+                    # Get the corresponding description
+                    if i < len(choice_descriptions) and choice_descriptions[i].strip():
+                        final_descriptions.append(choice_descriptions[i].strip())
+                    else:
+                        final_descriptions.append(f"Image {i+1}")
             
             if choice_images_list:
                 choice_images = json.dumps(choice_images_list)
-                # For image choices, create automatic text choices
-                choices = json.dumps([f"Image {i+1}" for i in range(len(choice_images_list))])
+                choices = json.dumps(final_descriptions)
         else:
             # Handle text choices
             choices_list = [c for c in request.form.getlist('choices') if c.strip()]
@@ -767,7 +775,7 @@ def submit_test(test_id):
             correct_answers += 1
             is_correct = True
         
-        # Store question data
+        # Store question data with consistent structure
         question_data = {
             'question_text': question.question_text,
             'question_type': question.question_type,
@@ -785,7 +793,8 @@ def submit_test(test_id):
             if question.choice_images:
                 question_data['choice_images'] = json.loads(question.choice_images)
         
-        result_data[question.id] = question_data
+        # Use string key to ensure consistency
+        result_data[str(question.id)] = question_data
     
     # Calculate percentage score
     score = (correct_answers / total_questions) * 100 if total_questions > 0 else 0
@@ -1374,5 +1383,7 @@ def test_abandoned():
         return '', 204  # No content response for sendBeacon
         
     except Exception as e:
+        app.logger.error(f'Test abandonment handling error: {str(e)}')
+        return '', 500
         app.logger.error(f'Test abandonment handling error: {str(e)}')
         return '', 500

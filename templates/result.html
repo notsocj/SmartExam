@@ -555,13 +555,16 @@
                 <!-- Calculate statistics first -->
                 {% if result.raw_data %}
                     {% set result_data = result.raw_data|from_json %}
-                    {% set ns = namespace(correct_count=0) %}
+                    {% set ns = namespace(correct_count=0, total_count=0) %}
                     {% for q_id, data in result_data.items() %}
-                        {% if data.is_correct %}
-                            {% set ns.correct_count = ns.correct_count + 1 %}
+                        {% if q_id != 'security_info' and data is mapping and 'is_correct' in data %}
+                            {% set ns.total_count = ns.total_count + 1 %}
+                            {% if data.is_correct %}
+                                {% set ns.correct_count = ns.correct_count + 1 %}
+                            {% endif %}
                         {% endif %}
                     {% endfor %}
-                    {% set total_count = result_data|length %}
+                    {% set total_count = ns.total_count %}
                     {% set incorrect_count = total_count - ns.correct_count %}
                 {% endif %}
 
@@ -689,98 +692,118 @@
                     <!-- Detailed Question Analysis -->
                     <h4 class="mb-3"><i class="fas fa-list-ol me-2"></i> Question Details</h4>
                     <div class="accordion mb-4" id="questionAccordion">
+                        {% set question_number = namespace(value=0) %}
                         {% for q_id, data in result_data.items() %}
-                        <div class="accordion-item mb-3 question-card {% if data.is_correct %}question-correct{% else %}question-incorrect{% endif %}">
-                            <h2 class="accordion-header">
-                                <button class="accordion-button {% if not loop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#question{{ q_id }}" aria-expanded="{% if loop.first %}true{% else %}false{% endif %}" aria-controls="question{{ q_id }}">
-                                    <div class="d-flex align-items-center w-100">
-                                        <span class="me-3">Question {{ loop.index }}</span>
-                                        {% if data.is_correct %}
-                                        <span class="badge bg-success ms-auto">Correct</span>
-                                        {% else %}
-                                        <span class="badge bg-danger ms-auto">Incorrect</span>
-                                        {% endif %}
-                                    </div>
-                                </button>
-                            </h2>
-                            <div id="question{{ q_id }}" class="accordion-collapse collapse {% if loop.first %}show{% endif %}" data-bs-parent="#questionAccordion">
-                                <div class="accordion-body">
-                                    <p class="mb-3 fw-bold">{{ data.question_text }}</p>
-                                    
-                                    {% if data.image_path %}
-                                    <div class="mb-3">
-                                        <img src="{{ url_for('static', filename=data.image_path) }}" alt="Question Image" class="img-fluid mb-3" style="max-height: 200px;">
-                                    </div>
-                                    {% endif %}
-                                    
-                                    {% if data.question_type == 'multiple_choice' and data.choices %}
-                                        <div class="mb-3">
-                                            <p class="mb-2">Available choices:</p>
-                                            {% if data.choice_images %}
-                                                <!-- Image choices display -->
-                                                <div class="row">
-                                                    {% for image_path in data.choice_images %}
-                                                    <div class="col-md-6 col-lg-4 mb-3">
-                                                        <div class="card {% if data.choices[loop.index0] == data.correct_answer %}border-success bg-light{% elif data.choices[loop.index0] == data.user_answer and data.user_answer != data.correct_answer %}border-danger bg-light{% endif %}">
-                                                            <div class="card-body text-center p-3">
-                                                                <img src="{{ url_for('static', filename=image_path) }}" 
-                                                                     alt="Choice {{ loop.index }}" 
-                                                                     class="img-fluid mb-2" 
-                                                                     style="max-height: 100px; object-fit: contain;">
-                                                                <h6 class="mb-1">{{ data.choices[loop.index0] }}</h6>
-                                                                {% if data.choices[loop.index0] == data.correct_answer %}
-                                                                <span class="badge bg-success">
-                                                                    <i class="fas fa-check-circle"></i> Correct
-                                                                </span>
-                                                                {% elif data.choices[loop.index0] == data.user_answer %}
-                                                                <span class="badge bg-danger">
-                                                                    <i class="fas fa-times-circle"></i> Your Answer
-                                                                </span>
+                            {% if q_id != 'security_info' and data is mapping and 'question_text' in data %}
+                                {% set question_number.value = question_number.value + 1 %}
+                                <div class="accordion-item mb-3 question-card {% if data.is_correct %}question-correct{% else %}question-incorrect{% endif %}">
+                                    <h2 class="accordion-header">
+                                        <button class="accordion-button {% if question_number.value != 1 %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#question{{ q_id }}" aria-expanded="{% if question_number.value == 1 %}true{% else %}false{% endif %}" aria-controls="question{{ q_id }}">
+                                            <div class="d-flex align-items-center w-100">
+                                                <span class="me-3">Question {{ question_number.value }}</span>
+                                                {% if data.is_correct %}
+                                                <span class="badge bg-success ms-auto">Correct</span>
+                                                {% else %}
+                                                <span class="badge bg-danger ms-auto">Incorrect</span>
+                                                {% endif %}
+                                            </div>
+                                        </button>
+                                    </h2>
+                                    <div id="question{{ q_id }}" class="accordion-collapse collapse {% if question_number.value == 1 %}show{% endif %}" data-bs-parent="#questionAccordion">
+                                        <div class="accordion-body">
+                                            <p class="mb-3 fw-bold">{{ data.question_text }}</p>
+                                            
+                                            {% if data.image_path %}
+                                            <div class="mb-3">
+                                                <img src="{{ url_for('static', filename=data.image_path) }}" alt="Question Image" class="img-fluid mb-3" style="max-height: 200px;">
+                                            </div>
+                                            {% endif %}
+                                            
+                                            {% if data.question_type == 'multiple_choice' and data.choices %}
+                                                <div class="mb-3">
+                                                    <p class="mb-2">Available choices:</p>
+                                                    {% if data.choice_images %}
+                                                        <!-- Image choices display with custom descriptions -->
+                                                        <div class="row">
+                                                            {% for image_path in data.choice_images %}
+                                                            <div class="col-md-6 col-lg-4 mb-3">
+                                                                <div class="card {% if data.choices[loop.index0] == data.correct_answer %}border-success bg-light{% elif data.choices[loop.index0] == data.user_answer and data.user_answer != data.correct_answer %}border-danger bg-light{% endif %}">
+                                                                    <div class="card-header text-center p-2">
+                                                                        <strong>{{ data.choices[loop.index0] }}</strong>
+                                                                        {% if data.choices[loop.index0] == data.correct_answer %}
+                                                                            <i class="fas fa-check-circle text-success ms-2"></i>
+                                                                        {% elif data.choices[loop.index0] == data.user_answer %}
+                                                                            <i class="fas fa-times-circle text-danger ms-2"></i>
+                                                                        {% endif %}
+                                                                    </div>
+                                                                    <div class="card-body text-center p-3">
+                                                                        <img src="{{ url_for('static', filename=image_path) }}" 
+                                                                             style="max-height: 100px; object-fit: contain;" 
+                                                                             alt="{{ data.choices[loop.index0] }}">
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    {% else %}
+                                                        <!-- Text choices display -->
+                                                        <div class="list-group">
+                                                            {% for choice in data.choices %}
+                                                            <div class="list-group-item {% if choice == data.correct_answer %}list-group-item-success{% elif choice == data.user_answer and data.user_answer != data.correct_answer %}list-group-item-danger{% endif %}">
+                                                                {{ choice }}
+                                                                {% if choice == data.correct_answer %}
+                                                                    <i class="fas fa-check-circle text-success float-end"></i>
+                                                                {% elif choice == data.user_answer %}
+                                                                    <i class="fas fa-times-circle text-danger float-end"></i>
                                                                 {% endif %}
+                                                            </div>
+                                                            {% endfor %}
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                                
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <div class="card {% if data.user_answer == data.correct_answer %}bg-success text-white{% else %}bg-danger text-white{% endif %}">
+                                                            <div class="card-header">Your Answer</div>
+                                                            <div class="card-body">
+                                                                <strong>{{ data.user_answer or 'No answer provided' }}</strong>
                                                             </div>
                                                         </div>
                                                     </div>
-                                                    {% endfor %}
+                                                    <div class="col-md-6">
+                                                        <div class="card bg-success text-white">
+                                                            <div class="card-header">Correct Answer</div>
+                                                            <div class="card-body">
+                                                                <strong>{{ data.correct_answer }}</strong>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             {% else %}
-                                                <!-- Text choices display -->
-                                                <div class="list-group">
-                                                    {% for choice in data.choices %}
-                                                    <div class="list-group-item {% if choice == data.correct_answer %}list-group-item-success{% elif choice == data.user_answer and data.user_answer != data.correct_answer %}list-group-item-danger{% endif %}">
-                                                        {{ choice }}
-                                                        {% if choice == data.correct_answer %}
-                                                        <span class="float-end"><i class="fas fa-check-circle text-success"></i></span>
-                                                        {% elif choice == data.user_answer and data.user_answer != data.correct_answer %}
-                                                        <span class="float-end"><i class="fas fa-times-circle text-danger"></i></span>
-                                                        {% endif %}
+                                                <div class="row mb-3">
+                                                    <div class="col-md-6">
+                                                        <div class="card {% if data.user_answer and data.user_answer.lower() == data.correct_answer.lower() %}bg-success text-white{% else %}bg-danger text-white{% endif %}">
+                                                            <div class="card-header">Your Answer</div>
+                                                            <div class="card-body">
+                                                                <strong>{{ data.user_answer or 'No answer provided' }}</strong>
+                                                            </div>
+                                                        </div>
                                                     </div>
-                                                    {% endfor %}
+                                                    <div class="col-md-6">
+                                                        <div class="card bg-success text-white">
+                                                            <div class="card-header">Correct Answer</div>
+                                                            <div class="card-body">
+                                                                <strong>{{ data.correct_answer }}</strong>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             {% endif %}
                                         </div>
-                                    {% else %}
-                                        <div class="row mb-3">
-                                            <div class="col-md-6">
-                                                <div class="card bg-light">
-                                                    <div class="card-header">Your Answer</div>
-                                                    <div class="card-body">
-                                                        <p class="mb-0 {% if not data.is_correct %}text-danger{% endif %}">{{ data.user_answer }}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <div class="card bg-light">
-                                                    <div class="card-header">Correct Answer</div>
-                                                    <div class="card-body">
-                                                        <p class="mb-0 text-success">{{ data.correct_answer }}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    {% endif %}
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
+                            {% endif %}
                         {% endfor %}
                     </div>
                 {% else %}

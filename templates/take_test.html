@@ -290,53 +290,50 @@
                                 {% endif %}
                                 
                                 {% if question.question_type == 'multiple_choice' %}
-                                    {% if question.choice_images %}
-                                        <!-- Image choices -->
+                                    {% if question.choice_images and question.choices %}
+                                        <!-- Image choices with custom descriptions -->
                                         {% set choice_images_data = question.choice_images|from_json %}
-                                        {% set choices_data = question.choices|from_json %}
+                                        {% set choice_descriptions = question.choices|from_json %}
                                         <div class="row">
                                             {% for image_path in choice_images_data %}
-                                            <div class="col-md-6 col-lg-4 mb-3">
-                                                <div class="card choice-card h-100" style="cursor: pointer;" onclick="selectImageChoice({{ question.id }}, '{{ choices_data[loop.index0] }}')">
-                                                    <div class="card-body text-center p-3">
-                                                        <img src="{{ url_for('static', filename=image_path) }}" 
-                                                             alt="Choice {{ loop.index }}" 
-                                                             class="img-fluid mb-2" 
-                                                             style="max-height: 150px; object-fit: contain;">
-                                                        <div class="form-check">
-                                                            <input class="form-check-input" type="radio" 
-                                                                   name="answer_{{ question.id }}" 
-                                                                   value="{{ choices_data[loop.index0] }}" 
-                                                                   id="q{{ question.id }}_choice{{ loop.index }}">
-                                                            <label class="form-check-label fw-bold" for="q{{ question.id }}_choice{{ loop.index }}">
-                                                                {{ choices_data[loop.index0] }}
-                                                            </label>
-                                                        </div>
+                                            <div class="col-md-6 col-lg-3 mb-3">
+                                                <div class="card choice-card h-100" 
+                                                     style="cursor: pointer; transition: all 0.3s ease;"
+                                                     onclick="selectImageChoice({{ question.id }}, '{{ choice_descriptions[loop.index0] if loop.index0 < choice_descriptions|length else ('Image ' + loop.index|string) }}')">
+                                                    <div class="card-header text-center p-2 bg-light">
+                                                        <strong class="choice-label">{{ choice_descriptions[loop.index0] if loop.index0 < choice_descriptions|length else ("Image " + loop.index|string) }}</strong>
                                                     </div>
+                                                    <div class="card-body text-center p-3 d-flex align-items-center justify-content-center">
+                                                        <img src="{{ url_for('static', filename=image_path) }}" 
+                                                             class="img-fluid choice-image" 
+                                                             style="max-height: 120px; object-fit: contain;" 
+                                                             alt="{{ choice_descriptions[loop.index0] if loop.index0 < choice_descriptions|length else ('Image ' + loop.index|string) }}">
+                                                    </div>
+                                                    <input type="radio" 
+                                                           name="answer_{{ question.id }}" 
+                                                           value="{{ choice_descriptions[loop.index0] if loop.index0 < choice_descriptions|length else ('Image ' + loop.index|string) }}" 
+                                                           class="choice-radio d-none">
                                                 </div>
                                             </div>
                                             {% endfor %}
                                         </div>
-                                    {% else %}
+                                    {% elif question.choices %}
                                         <!-- Text choices -->
-                                        {% set choices_data = question.choices|from_json %}
-                                        {% for choice in choices_data %}
+                                        {% set choice_list = question.choices|from_json %}
+                                        {% for choice in choice_list %}
                                         <div class="form-check mb-2">
-                                            <input class="form-check-input" type="radio" 
-                                                   name="answer_{{ question.id }}" 
-                                                   value="{{ choice }}" 
-                                                   id="q{{ question.id }}_choice{{ loop.index }}">
-                                            <label class="form-check-label" for="q{{ question.id }}_choice{{ loop.index }}">
+                                            <input class="form-check-input" type="radio" name="answer_{{ question.id }}" 
+                                                   id="choice_{{ question.id }}_{{ loop.index }}" value="{{ choice }}">
+                                            <label class="form-check-label" for="choice_{{ question.id }}_{{ loop.index }}">
                                                 {{ choice }}
                                             </label>
                                         </div>
                                         {% endfor %}
                                     {% endif %}
                                 {% else %}
-                                    <!-- Text input for identification/image questions -->
-                                    <input type="text" class="form-control" 
-                                           name="answer_{{ question.id }}" 
-                                           placeholder="Enter your answer here" required>
+                                    <!-- Identification input -->
+                                    <input type="text" class="form-control" name="answer_{{ question.id }}" 
+                                           placeholder="Enter your answer here..." required>
                                 {% endif %}
                             </div>
                         </div>
@@ -795,22 +792,30 @@
         
         // Function to select image choice
         function selectImageChoice(questionId, choiceValue) {
+            console.log('Selecting choice:', choiceValue, 'for question:', questionId);
+            
             const radio = document.querySelector(`input[name="answer_${questionId}"][value="${choiceValue}"]`);
             if (radio) {
                 radio.checked = true;
                 
-                // Update visual feedback
-                const allCards = document.querySelectorAll(`input[name="answer_${questionId}"]`).forEach(input => {
+                // Update visual feedback - remove selection from all cards for this question
+                const allCards = document.querySelectorAll(`input[name="answer_${questionId}"]`);
+                allCards.forEach(input => {
                     const card = input.closest('.choice-card');
                     if (card) {
                         card.classList.remove('border-primary', 'bg-light');
+                        card.style.boxShadow = '';
                     }
                 });
                 
+                // Add selection to current card
                 const selectedCard = radio.closest('.choice-card');
                 if (selectedCard) {
                     selectedCard.classList.add('border-primary', 'bg-light');
+                    selectedCard.style.boxShadow = '0 4px 12px rgba(0,123,255,0.3)';
                 }
+            } else {
+                console.error('Radio button not found for choice:', choiceValue);
             }
         }
         
@@ -818,26 +823,39 @@
         document.addEventListener('DOMContentLoaded', function() {
             const choiceCards = document.querySelectorAll('.choice-card');
             choiceCards.forEach(card => {
+                // Add hover effects
+                card.addEventListener('mouseenter', function() {
+                    if (!this.classList.contains('border-primary')) {
+                        this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+                        this.style.transform = 'translateY(-2px)';
+                    }
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    if (!this.classList.contains('border-primary')) {
+                        this.style.boxShadow = '';
+                        this.style.transform = 'translateY(0)';
+                    }
+                });
+                
                 card.addEventListener('click', function() {
                     const radio = this.querySelector('input[type="radio"]');
                     if (radio) {
-                        radio.checked = true;
-                        
-                        // Remove selection from other cards in the same question
                         const questionName = radio.name;
-                        document.querySelectorAll(`input[name="${questionName}"]`).forEach(input => {
-                            const otherCard = input.closest('.choice-card');
-                            if (otherCard && otherCard !== card) {
-                                otherCard.classList.remove('border-primary', 'bg-light');
-                            }
-                        });
+                        const choiceValue = radio.value;
                         
-                        // Add selection to current card
-                        this.classList.add('border-primary', 'bg-light');
+                        // Extract question ID from name (answer_X format)
+                        const questionId = questionName.replace('answer_', '');
+                        
+                        selectImageChoice(questionId, choiceValue);
                     }
                 });
             });
+            
+            // ...existing security code...
         });
+        
+        // ...existing code...
     </script>
 </body>
 </html>
