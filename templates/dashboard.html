@@ -664,7 +664,12 @@
                     {% for test_id, stats in test_statistics.items() %}
                     <div class="card mb-3">
                         <div class="card-header">
-                            <h5>{{ tests|selectattr("id", "equalto", test_id)|first|attr("title") }}</h5>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">{{ tests|selectattr("id", "equalto", test_id)|first|attr("title") }}</h5>
+                                <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#testInsightsModal{{ test_id }}">
+                                    <i class="fas fa-chart-bar me-1"></i>View Insights
+                                </button>
+                            </div>
                         </div>
                         <div class="card-body">
                             <!-- Key Metrics -->
