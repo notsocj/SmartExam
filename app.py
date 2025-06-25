@@ -709,7 +709,7 @@ def take_test(test_id):
     
     # Check if the user has already taken this test
     existing_result = Result.query.filter_by(user_id=current_user.id, test_id=test_id).first()
-    if existing_result:
+    if existing_result and not existing_result.can_retake:
         flash('You have already taken this test')
         return redirect(url_for('available_tests'))
     
@@ -725,10 +725,12 @@ def take_test(test_id):
     session['tab_switches'] = 0
     session['fullscreen_exits'] = 0
     session['security_log'] = []
+    session['is_retake'] = existing_result is not None
     session.permanent = True
     
     # Log test start
-    app.logger.info(f'Test started: User {current_user.id} ({current_user.name}) started test {test_id} ({test.title})')
+    retake_text = " (RETAKE)" if existing_result else ""
+    app.logger.info(f'Test started: User {current_user.id} ({current_user.name}) started test {test_id} ({test.title}){retake_text}')
     
     return render_template('take_test.html', test=test)
 
@@ -742,9 +744,11 @@ def submit_test(test_id):
     # Check if the test exists
     test = Test.query.get_or_404(test_id)
     
-    # Check if the user has already taken this test
+    # Check for existing result and retake permission
     existing_result = Result.query.filter_by(user_id=current_user.id, test_id=test_id).first()
-    if existing_result:
+    is_retake = session.get('is_retake', False)
+    
+    if existing_result and not existing_result.can_retake:
         flash('You have already taken this test')
         return redirect(url_for('available_tests'))
     
@@ -813,19 +817,26 @@ def submit_test(test_id):
         'security_log': security_log[:10]  # Store only last 10 entries
     }
     
-    # Create result record
+    # Handle retake: delete old result if this is a retake
+    if is_retake and existing_result:
+        db.session.delete(existing_result)
+        db.session.flush()  # Ensure deletion is processed
+    
+    # Create new result record
     result = Result(
         user_id=current_user.id,
         test_id=test_id,
         score=score,
-        raw_data=json.dumps(result_data)
+        raw_data=json.dumps(result_data),
+        can_retake=False  # Set to False after taking/retaking the test
     )
     
     db.session.add(result)
     db.session.commit()
     
-    # Log test completion with security info
-    app.logger.info(f'Test completed: User {current_user.id} ({current_user.name}) completed test {test_id} with score {score:.1f}%. Security violations: {security_violations}, Tab switches: {tab_switches}, Fullscreen exits: {fullscreen_exits}')
+    # Log test completion with retake info
+    retake_text = " (RETAKE)" if is_retake else ""
+    app.logger.info(f'Test completed: User {current_user.id} ({current_user.name}) completed test {test_id} with score {score:.1f}%{retake_text}. Security violations: {security_violations}, Tab switches: {tab_switches}, Fullscreen exits: {fullscreen_exits}')
     
     # Clear active test session after submission
     session.pop('active_test_id', None)
@@ -835,10 +846,12 @@ def submit_test(test_id):
     session.pop('tab_switches', None)
     session.pop('fullscreen_exits', None)
     session.pop('security_log', None)
+    session.pop('is_retake', None)
     session.permanent = True
     
     # Redirect to result page
-    flash(f'Test submitted successfully. Your score: {score:.1f}%')
+    retake_message = " (Retake completed)" if is_retake else ""
+    flash(f'Test submitted successfully{retake_message}. Your score: {score:.1f}%')
     return redirect(url_for('view_result', result_id=result.id))
 
 @app.route('/student_records/<int:user_id>')
@@ -1220,6 +1233,25 @@ def resource_file(filename):
     # Serve files from the learning resources folder
     return send_from_directory(app.config['LEARNING_RESOURCES_FOLDER'], filename)
 
+@app.route('/toggle_retake/<int:result_id>', methods=['POST'])
+@login_required
+@admin_required
+def toggle_retake(result_id):
+    """Toggle retake permission for a specific result"""
+    try:
+        result = Result.query.get_or_404(result_id)
+        result.can_retake = not result.can_retake
+        db.session.commit()
+        
+        status = "enabled" if result.can_retake else "disabled"
+        flash(f'Retake {status} for {result.user.name} on test "{result.test.title}"', 'success')
+    
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error updating retake permission: {str(e)}', 'error')
+    
+    return redirect(url_for('dashboard'))
+
 @app.route('/')
 def index():
     return redirect(url_for('login'))
@@ -1383,7 +1415,5 @@ def test_abandoned():
         return '', 204  # No content response for sendBeacon
         
     except Exception as e:
-        app.logger.error(f'Test abandonment handling error: {str(e)}')
-        return '', 500
         app.logger.error(f'Test abandonment handling error: {str(e)}')
         return '', 500

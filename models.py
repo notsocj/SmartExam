@@ -28,6 +28,7 @@ class Result(db.Model):
     score = db.Column(db.Float, nullable=False)
     date_taken = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     raw_data = db.Column(db.Text)  # Store JSON or other structured data
+    can_retake = db.Column(db.Boolean, default=False, nullable=False)  # New column for retake control
 
 class Test(db.Model):
     id = db.Column(db.Integer, primary_key=True)

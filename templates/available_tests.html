@@ -253,17 +253,32 @@
                                     </div>
                                     
                                     {% if test.id in completed_tests %}
-                                        <div class="alert alert-success mb-3">
-                                            <i class="fas fa-check-circle me-1"></i> You have completed this test.                                            {% for result in user_results %}
-                                                {% if result.test_id == test.id %}
-                                                    <br>Score: {{ "{:.1f}".format(result.score) }}%
-                                                {% endif %}
-                                            {% endfor %}
-                                        </div>                                        <div class="d-grid">
-                                            <a href="{{ url_for('view_result', result_id=test_results[test.id]) }}" class="btn btn-success text-white w-100">
-                                                <i class="fas fa-eye me-1"></i> View Results
-                                            </a>
-                                        </div>
+                                        {% set user_result = user_results|selectattr('test_id', 'equalto', test.id)|first %}
+                                        {% if user_result and user_result.can_retake %}
+                                            <div class="alert alert-info mb-3">
+                                                <i class="fas fa-redo me-1"></i> Retake available for this test.
+                                                <br>Previous Score: {{ "{:.1f}".format(user_result.score) }}%
+                                            </div>
+                                            <div class="d-grid">
+                                                <a href="{{ url_for('take_test', test_id=test.id) }}" class="btn btn-warning text-white">
+                                                    <i class="fas fa-redo me-1"></i> Retake Test
+                                                </a>
+                                            </div>
+                                        {% else %}
+                                            <div class="alert alert-success mb-3">
+                                                <i class="fas fa-check-circle me-1"></i> You have completed this test.
+                                                {% for result in user_results %}
+                                                    {% if result.test_id == test.id %}
+                                                        <br>Score: {{ "{:.1f}".format(result.score) }}%
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                            <div class="d-grid">
+                                                <a href="{{ url_for('view_result', result_id=test_results[test.id]) }}" class="btn btn-success text-white w-100">
+                                                    <i class="fas fa-eye me-1"></i> View Results
+                                                </a>
+                                            </div>
+                                        {% endif %}
                                     {% else %}
                                         <div class="d-grid">
                                             <a href="{{ url_for('take_test', test_id=test.id) }}" class="btn btn-success">
