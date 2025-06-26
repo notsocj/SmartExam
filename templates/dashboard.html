@@ -763,7 +763,7 @@
                                             <tr>
                                                 <td>{{ student_result.student_name }} ({{ student_result.student_id }})</td>
                                                 <td>{{ "%.1f"|format(student_result.score) }}%</td>
-                                                <td>{{ student_result.date_taken.strftime('%Y-%m-%d %H:%M') }}</td>
+                                                <td>{{ student_result.date_taken.strftime('%Y-%m-%d') }}</td>
                                                 <td>
                                                     {% set result = results|selectattr("id", "equalto", student_result.result_id)|first %}
                                                     {% if result and result.can_retake %}
