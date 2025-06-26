@@ -849,7 +849,6 @@
     </div>
     {% endfor %}
 
-    <!-- Test Insights Modals -->
     {% for test in tests %}
         {% if test.id in test_statistics %}
             {% set stats = test_statistics[test.id] %}
