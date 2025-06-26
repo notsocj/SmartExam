@@ -152,6 +152,53 @@
         </div>
     </div>
 
+    <!-- Time's Up Modal -->
+    <div class="modal fade" id="timeUpModal" tabindex="-1" aria-labelledby="timeUpModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-3">
+                <div class="modal-header bg-danger text-white border-0 text-center">
+                    <div class="w-100">
+                        <h5 class="modal-title fw-bold d-flex align-items-center justify-content-center" id="timeUpModalLabel">
+                            <i class="fas fa-clock me-2"></i>Time's Up!
+                        </h5>
+                    </div>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <div class="mb-4">
+                        <div class="bg-danger rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
+                            <i class="fas fa-stopwatch text-white" style="font-size: 2rem;"></i>
+                        </div>
+                        <h4 class="text-danger mb-3">Test Time Expired</h4>
+                        <p class="mb-3">Your allocated time for this test has ended. Your test will be submitted automatically with your current answers.</p>
+                    </div>
+                    
+                    <div class="alert alert-info border-0 mb-4" style="background-color: #d1ecf1;">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <i class="fas fa-info-circle me-2 text-info"></i>
+                            <small><strong>Note:</strong> All answered questions will be saved automatically.</small>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-center align-items-center mb-3">
+                        <div class="spinner-border text-primary me-3" role="status" style="width: 1.5rem; height: 1.5rem;">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <span class="text-muted">Submitting your test...</span>
+                    </div>
+                    
+                    <div class="progress" style="height: 6px;">
+                        <div id="submission-progress" class="progress-bar bg-primary progress-bar-striped progress-bar-animated" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-4 d-flex justify-content-center">
+                    <button type="button" id="manual-submit-btn" class="btn btn-primary px-4" style="display: none;">
+                        <i class="fas fa-paper-plane me-2"></i>Submit Now
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary fixed-top shadow">
         <div class="container-fluid px-3 px-lg-5">
@@ -734,8 +781,8 @@
                     if (timerElement) timerElement.textContent = "00:00";
                     if (mobileTimerElement) mobileTimerElement.textContent = "00:00";
                     
-                    alert("Time's up! Your test will be submitted automatically.");
-                    testForm.submit();
+                    // Show the time's up modal instead of alert
+                    showTimeUpModal();
                     return;
                 }
                 
@@ -761,6 +808,42 @@
                         mobileTimerCard.classList.add('timer-danger');
                     }
                 }
+            }
+            
+            function showTimeUpModal() {
+                const timeUpModal = new bootstrap.Modal(document.getElementById('timeUpModal'), {
+                    backdrop: 'static',
+                    keyboard: false
+                });
+                
+                timeUpModal.show();
+                
+                // Start progress bar animation
+                const progressBar = document.getElementById('submission-progress');
+                const manualSubmitBtn = document.getElementById('manual-submit-btn');
+                
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += 2;
+                    progressBar.style.width = progress + '%';
+                    
+                    if (progress >= 100) {
+                        clearInterval(progressInterval);
+                        // Auto-submit after progress completes
+                        setTimeout(() => {
+                            testForm.submit();
+                        }, 500);
+                    }
+                }, 100); // Updates every 100ms, takes 5 seconds total
+                
+                // Show manual submit button after 3 seconds
+                setTimeout(() => {
+                    manualSubmitBtn.style.display = 'block';
+                    manualSubmitBtn.addEventListener('click', function() {
+                        clearInterval(progressInterval);
+                        testForm.submit();
+                    });
+                }, 3000);
             }
             
             updateTimer();
