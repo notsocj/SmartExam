@@ -323,18 +323,17 @@
             <form id="test-form" method="POST" action="{{ url_for('submit_test', test_id=test.id) }}">
                 <div class="row">
                     {% for question in test.questions %}
-                    <div class="col-12 mb-4">
-                        <div class="card question-card shadow-sm">
-                            <div class="card-body p-4">
-                                <h5 class="card-title">Question {{ loop.index }}</h5>
-                                <p class="mb-3">{{ question.question_text }}</p>
-                                
-                                {% if question.image_path %}
-                                <div class="mb-3 text-center">
-                                    <img src="{{ url_for('static', filename=question.image_path) }}" 
-                                         alt="Question Image" class="img-fluid" style="max-height: 300px;">
-                                </div>
-                                {% endif %}
+                    <div class="col-12 mb-4">                            <div class="card question-card shadow-sm">
+                                <div class="card-body p-4">
+                                    <h5 class="card-title">Question {{ loop.index }}</h5>
+                                    <p class="mb-3">{{ question.question_text }}</p>
+                                    
+                                    {% if question.image_path %}
+                                    <div class="mb-3 text-center">
+                                        <img src="{{ url_for('static', filename=question.image_path) }}" 
+                                             alt="Question Image" class="img-fluid" style="max-height: 300px;">
+                                    </div>
+                                    {% endif %}
                                 
                                 {% if question.question_type == 'multiple_choice' %}
                                     {% if question.choice_images and question.choices %}

@@ -483,6 +483,36 @@
                                                 </div>
                                             </div>
                                             
+                                            <div class="mb-3">
+                                                <label for="question_image" class="form-label">Question Image (Optional)</label>
+                                                <input type="file" class="form-control" id="question_image" name="question_image" accept="image/*">
+                                                <div class="form-text">Upload an image to accompany your question text. This works for all question types.</div>
+                                                
+                                                <input type="hidden" id="question_image_path" name="question_image_path" value="{{ question.image_path if question and question.image_path else '' }}">
+                                                
+                                                {% if question and question.image_path %}
+                                                <div class="mt-3" id="question_image_preview_container">
+                                                    <label class="form-label">Current Question Image</label>
+                                                    <div class="card p-2">
+                                                        <img id="question_image_preview" class="img-fluid" src="{{ url_for('static', filename=question.image_path) }}" alt="Question Image" style="max-height: 200px;">
+                                                        <div class="mt-2 text-center">
+                                                            <button type="button" class="btn btn-sm btn-outline-danger" id="remove_question_image">Remove Image</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% else %}
+                                                <div class="mt-3" id="question_image_preview_container" style="display: none;">
+                                                    <label class="form-label">Question Image Preview</label>
+                                                    <div class="card p-2">
+                                                        <img id="question_image_preview" class="img-fluid" src="" alt="Question Image" style="max-height: 200px;">
+                                                        <div class="mt-2 text-center">
+                                                            <button type="button" class="btn btn-sm btn-outline-danger" id="remove_question_image">Remove Image</button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                            
                                             <div id="choices_container" class="mb-3" style="display: none;">
                                                 <label class="form-label">Choices</label>
                                                 <div class="form-check mb-2">
@@ -890,7 +920,44 @@
                     }
                 });
                 
-                // Image preview functionality
+                // Image preview functionality for question images
+                const questionImageInput = document.getElementById('question_image');
+                const questionImagePreviewContainer = document.getElementById('question_image_preview_container');
+                const questionImagePreview = document.getElementById('question_image_preview');
+                const questionImagePathInput = document.getElementById('question_image_path');
+                const removeQuestionImageBtn = document.getElementById('remove_question_image');
+                
+                if (questionImageInput && questionImagePreviewContainer && questionImagePreview && questionImagePathInput) {
+                    questionImageInput.addEventListener('change', function() {
+                        if (this.files && this.files[0]) {
+                            const reader = new FileReader();
+                            
+                            reader.onload = function(e) {
+                                questionImagePreview.src = e.target.result;
+                                questionImagePreviewContainer.style.display = 'block';
+                            }
+                            
+                            reader.readAsDataURL(this.files[0]);
+                            
+                            // Update filename for display purposes
+                            const filename = this.files[0].name;
+                            questionImagePathInput.value = 'uploads/' + filename;
+                        } else {
+                            questionImagePreviewContainer.style.display = 'none';
+                        }
+                    });
+                    
+                    // Remove question image functionality
+                    if (removeQuestionImageBtn) {
+                        removeQuestionImageBtn.addEventListener('click', function() {
+                            questionImageInput.value = '';
+                            questionImagePathInput.value = '';
+                            questionImagePreviewContainer.style.display = 'none';
+                        });
+                    }
+                }
+                
+                // Image preview functionality for image questions
                 const imageFileInput = document.getElementById('image_file');
                 const imagePreviewContainer = document.getElementById('image_preview_container');
                 const imagePreview = document.getElementById('image_preview');

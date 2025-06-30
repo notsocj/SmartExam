@@ -2,6 +2,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+import json
 
 db = SQLAlchemy()
 
@@ -56,9 +57,29 @@ class Question(db.Model):
     choices = db.Column(db.Text)  # Stored as JSON for multiple-choice questions
     choice_images = db.Column(db.Text)  # Stored as JSON for multiple-choice image paths
     correct_answer = db.Column(db.Text, nullable=False)
-    image_path = db.Column(db.String(255))  # Only for image questions
+    image_path = db.Column(db.String(255))  # For question images (all types) and image question content
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    @property
+    def choices_list(self):
+        """Return choices as a Python list"""
+        if self.choices:
+            try:
+                return json.loads(self.choices)
+            except:
+                return []
+        return []
+    
+    @property
+    def choice_images_list(self):
+        """Return choice images as a Python list"""
+        if self.choice_images:
+            try:
+                return json.loads(self.choice_images)
+            except:
+                return []
+        return []
 
 class LearningResource(db.Model):
     id = db.Column(db.Integer, primary_key=True)

@@ -561,6 +561,23 @@ def create_question(test_id):
     question_id = request.form.get('question_id', '')
     use_choice_images = 'use_choice_images' in request.form
     
+    # Handle question image upload (for all question types)
+    question_image_path = request.form.get('question_image_path')
+    if 'question_image' in request.files:
+        file = request.files['question_image']
+        if file and file.filename and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            # Create unique filename with question info
+            unique_filename = f"question_{test_id}_{int(datetime.now().timestamp())}_{filename}"
+            upload_folder = os.path.join(app.static_folder, 'uploads')
+            
+            if not os.path.exists(upload_folder):
+                os.makedirs(upload_folder)
+            
+            file_path = os.path.join(upload_folder, unique_filename)
+            file.save(file_path)
+            question_image_path = 'uploads/' + unique_filename
+    
     # Process choices for multiple-choice
     choices = None
     choice_images = None
@@ -613,7 +630,7 @@ def create_question(test_id):
             choices_list = [c for c in request.form.getlist('choices') if c.strip()]
             choices = json.dumps(choices_list)
     
-    # Process image upload for image questions
+    # Process image upload for image questions (separate from question image)
     image_path = request.form.get('image_path')
     if question_type == 'image' and 'image_file' in request.files:
         file = request.files['image_file']
@@ -636,12 +653,18 @@ def create_question(test_id):
         question.choices = choices
         question.choice_images = choice_images
         question.correct_answer = correct_answer
-        if image_path:
+        if question_image_path:
+            question.image_path = question_image_path
+        if image_path and question_type == 'image':
             question.image_path = image_path
         question.updated_at = datetime.utcnow()
         flash('Question updated successfully')
     else:
         # Create new question
+        final_image_path = question_image_path
+        if question_type == 'image' and image_path:
+            final_image_path = image_path
+        
         new_question = Question(
             test_id=test_id,
             question_text=question_text,
@@ -649,7 +672,7 @@ def create_question(test_id):
             choices=choices,
             choice_images=choice_images,
             correct_answer=correct_answer,
-            image_path=image_path
+            image_path=final_image_path
         )
         db.session.add(new_question)
         flash('Question created successfully')
