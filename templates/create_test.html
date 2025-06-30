@@ -782,6 +782,12 @@
                         choicesContainer.style.display = 'block';
                         imageContainer.style.display = 'none';
                         
+                        // Show question image section for multiple choice questions
+                        const questionImageContainer = document.querySelector('.mb-3:has(#question_image)');
+                        if (questionImageContainer) {
+                            questionImageContainer.style.display = 'block';
+                        }
+                        
                         // Check which type of choices to show
                         updateChoiceDisplay();
                         
@@ -792,6 +798,12 @@
                     } else if (questionType.value === 'image') {
                         choicesContainer.style.display = 'none';
                         imageContainer.style.display = 'block';
+                        
+                        // Hide question image section for image type questions since it's redundant
+                        const questionImageContainer = document.querySelector('.mb-3:has(#question_image)');
+                        if (questionImageContainer) {
+                            questionImageContainer.style.display = 'none';
+                        }
                         
                         // Remove choices requirements
                         choiceInputs.forEach(input => {
@@ -804,6 +816,12 @@
                     } else { // identification
                         choicesContainer.style.display = 'none';
                         imageContainer.style.display = 'none';
+                        
+                        // Show question image section for non-image type questions
+                        const questionImageContainer = document.querySelector('.mb-3:has(#question_image)');
+                        if (questionImageContainer) {
+                            questionImageContainer.style.display = 'block';
+                        }
                         
                         // Remove all special requirements
                         choiceInputs.forEach(input => {

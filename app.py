@@ -474,8 +474,6 @@ def create_test():
         question_id = request.args.get('edit', None)
         if question_id:
             question = Question.query.get_or_404(question_id)
-            if question.question_type == 'multiple_choice' and question.choices:
-                question.choices_list = json.loads(question.choices)
     
     return render_template('create_test.html', 
                           tests=tests, 
