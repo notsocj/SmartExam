@@ -793,7 +793,7 @@
                                                 
                                                 <div class="row mb-3">
                                                     <div class="col-md-6">
-                                                        <div class="card {% if data.user_answer == data.correct_answer %}bg-success text-white{% else %}bg-danger text-white{% endif %}">
+                                                        <div class="card {% if data.is_correct %}bg-success text-white{% else %}bg-danger text-white{% endif %}">
                                                             <div class="card-header">Your Answer</div>
                                                             <div class="card-body">
                                                                 <strong>{{ data.user_answer or 'No answer provided' }}</strong>
@@ -812,7 +812,7 @@
                                             {% else %}
                                                 <div class="row mb-3">
                                                     <div class="col-md-6">
-                                                        <div class="card {% if data.user_answer and data.user_answer.lower() == data.correct_answer.lower() %}bg-success text-white{% else %}bg-danger text-white{% endif %}">
+                                                        <div class="card {% if data.is_correct %}bg-success text-white{% else %}bg-danger text-white{% endif %}">
                                                             <div class="card-header">Your Answer</div>
                                                             <div class="card-body">
                                                                 <strong>{{ data.user_answer or 'No answer provided' }}</strong>
